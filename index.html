@@ -1,1103 +1,433 @@
-```html
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BeeBee – Học từng chút, tiến bộ mỗi ngày</title>
-    <!-- Tailwind CSS -->
+    <title>MedMaster Pro - Hệ thống Học tập Y khoa</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Nunito', 'sans-serif'],
-                        display: ['Quicksand', 'sans-serif'],
-                    },
-                    colors: {
-                        bee: {
-                            yellow: '#F9D034',
-                            dark: '#E4A834',
-                            brown: '#4A2E11',
-                            light: '#FFFDF9',
-                            bg: '#FDFBF7',
-                            border: '#F3EAD3'
-                        }
-                    }
+                    colors: { primary: '#2563eb', secondary: '#f8fafc', darkbg: '#0f172a', darkcard: '#1e293b' }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: theme('colors.bee.bg'); color: theme('colors.bee.brown'); }
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #F5EFE6; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #E4A834; border-radius: 4px; }
-        
-        /* Animations */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-12px) rotate(4deg); }
-        }
-        @keyframes wing {
-            0%, 100% { transform: scaleY(1) rotate(0deg); }
-            50% { transform: scaleY(0.4) rotate(15deg); }
-        }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .wing-l { transform-origin: bottom right; animation: wing 0.1s infinite; }
-        .wing-r { transform-origin: bottom left; animation: wing 0.1s infinite; }
-        
-        .nav-active {
-            background-color: theme('colors.bee.yellow') !important;
-            color: theme('colors.bee.brown') !important;
-            font-weight: 800;
-            box-shadow: 0 4px 10px rgba(249, 208, 52, 0.3);
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: all 0.3s ease; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .sidebar-item.active { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        .dark .glass { background: rgba(30, 41, 59, 0.8); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col md:flex-row antialiased selection:bg-bee-yellow selection:text-bee-brown">
+<body class="bg-secondary text-slate-800 dark:bg-darkbg dark:text-slate-200">
 
-    <!-- DESKTOP SIDEBAR -->
-    <aside class="hidden md:flex flex-col w-72 bg-white border-r-2 border-bee-border p-6 shrink-0 justify-between sticky top-0 h-screen shadow-[4px_0_24px_rgba(243,234,211,0.4)]">
-        <div>
-            <!-- Logo -->
-            <div class="flex items-center gap-4 mb-10 cursor-pointer group" onclick="app.switchTab('home')">
-                <div class="relative w-14 h-14 flex items-center justify-center bg-bee-yellow rounded-2xl shadow-lg transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                    <span class="text-3xl">🐝</span>
-                </div>
-                <div>
-                    <h1 class="text-3xl font-display font-bold text-bee-dark">BeeBee</h1>
-                    <p class="text-[11px] text-stone-500 font-bold uppercase tracking-wider">Học từng chút một</p>
-                </div>
+    <aside id="sidebar" class="fixed left-0 top-0 h-screen w-72 bg-white dark:bg-darkcard border-r border-slate-200 dark:border-slate-700 z-50 transition-transform -translate-x-full lg:translate-x-0 overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center gap-3 text-primary dark:text-blue-400 mb-10">
+                <i class="fa-solid fa-house-medical text-3xl"></i>
+                <h1 class="text-2xl font-bold tracking-tight">MedMaster</h1>
             </div>
-
-            <!-- Nav -->
-            <nav class="space-y-2.5">
-                <button onclick="app.switchTab('home')" id="nav-home" class="nav-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl font-bold text-stone-600 hover:bg-amber-50 hover:text-bee-brown transition-all text-left">
-                    <i class="fa-solid fa-house text-lg w-6 text-center"></i> Trang chủ
-                </button>
-                <button onclick="app.switchTab('tasks')" id="nav-tasks" class="nav-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl font-bold text-stone-600 hover:bg-amber-50 hover:text-bee-brown transition-all text-left">
-                    <i class="fa-solid fa-list-check text-lg w-6 text-center"></i> Việc cần làm
-                </button>
-                <button onclick="app.switchTab('pomodoro')" id="nav-pomodoro" class="nav-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl font-bold text-stone-600 hover:bg-amber-50 hover:text-bee-brown transition-all text-left relative">
-                    <i class="fa-solid fa-stopwatch text-lg w-6 text-center"></i> Pomodoro
-                    <span class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-400 rounded-full animate-ping hidden" id="pomo-active-dot"></span>
-                </button>
-                <button onclick="app.switchTab('goals')" id="nav-goals" class="nav-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl font-bold text-stone-600 hover:bg-amber-50 hover:text-bee-brown transition-all text-left">
-                    <i class="fa-solid fa-bullseye text-lg w-6 text-center"></i> Mục tiêu SMART
-                </button>
-                <button onclick="app.switchTab('hive')" id="nav-hive" class="nav-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl font-bold text-stone-600 hover:bg-amber-50 hover:text-bee-brown transition-all text-left">
-                    <i class="fa-brands fa-hive text-lg w-6 text-center"></i> Tổ ong & Cây
-                </button>
-                <button onclick="app.switchTab('why')" id="nav-why" class="nav-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl font-bold text-stone-600 hover:bg-amber-50 hover:text-bee-brown transition-all text-left">
-                    <i class="fa-solid fa-magnifying-glass-chart text-lg w-6 text-center"></i> Tại sao trì hoãn?
-                </button>
-                <button onclick="app.switchTab('stats')" id="nav-stats" class="nav-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl font-bold text-stone-600 hover:bg-amber-50 hover:text-bee-brown transition-all text-left">
-                    <i class="fa-solid fa-chart-pie text-lg w-6 text-center"></i> Thống kê & Nhật ký
-                </button>
-            </nav>
-        </div>
-
-        <!-- Status Footer -->
-        <div class="bg-amber-50 p-5 rounded-3xl border-2 border-amber-100 text-center relative overflow-hidden">
-            <div class="absolute -right-4 -top-4 text-4xl opacity-10">🍯</div>
-            <div class="flex justify-center items-center gap-2 mb-2">
-                <i class="fa-solid fa-jar-honey text-amber-500 text-xl"></i>
-                <span class="font-black text-2xl text-amber-600 drop-shadow-sm" id="status-honey">0</span>
-            </div>
-            <div class="text-xs font-bold text-amber-800 uppercase tracking-widest mb-1">Giọt mật</div>
-            <div class="text-sm font-extrabold text-bee-brown bg-white py-1.5 rounded-xl border border-amber-200 mt-2" id="status-rank">Ong Mới Vào Nghề</div>
             
-            <!-- Hiển thị tài khoản cá nhân hóa -->
-            <div class="text-[10px] font-bold text-amber-600 mt-3 truncate bg-amber-100/50 py-1 px-2 rounded-lg" id="user-id-display">Đang đồng bộ...</div>
+            <nav class="space-y-1" id="main-nav">
+                </nav>
         </div>
     </aside>
 
-    <!-- MOBILE HEADER -->
-    <header class="md:hidden bg-white border-b-2 border-bee-border p-4 flex justify-between items-center sticky top-0 z-50">
-        <div class="flex items-center gap-3" onclick="app.switchTab('home')">
-            <div class="w-10 h-10 bg-bee-yellow rounded-xl flex items-center justify-center text-2xl">🐝</div>
-            <h1 class="text-2xl font-display font-bold text-bee-dark">BeeBee</h1>
-        </div>
-        <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1.5 font-black text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
-                <i class="fa-solid fa-jar-honey"></i> <span id="mobile-honey">0</span>
-            </div>
-            <button onclick="app.toggleMobileMenu()" class="text-bee-brown text-2xl p-1">
-                <i class="fa-solid fa-bars" id="mobile-menu-icon"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- MOBILE MENU -->
-    <div id="mobile-menu" class="hidden md:hidden fixed top-[74px] left-0 w-full h-[calc(100vh-74px)] bg-white/95 backdrop-blur-md z-40 p-4 overflow-y-auto space-y-2 border-b border-bee-border">
-        <button onclick="app.switchTab('home'); app.toggleMobileMenu()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-stone-600 bg-amber-50/50 hover:bg-bee-yellow hover:text-bee-brown text-left text-lg"><i class="fa-solid fa-house w-8 text-center"></i> Trang chủ</button>
-        <button onclick="app.switchTab('tasks'); app.toggleMobileMenu()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-stone-600 bg-amber-50/50 hover:bg-bee-yellow hover:text-bee-brown text-left text-lg"><i class="fa-solid fa-list-check w-8 text-center"></i> Việc cần làm</button>
-        <button onclick="app.switchTab('pomodoro'); app.toggleMobileMenu()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-stone-600 bg-amber-50/50 hover:bg-bee-yellow hover:text-bee-brown text-left text-lg"><i class="fa-solid fa-stopwatch w-8 text-center"></i> Pomodoro</button>
-        <button onclick="app.switchTab('goals'); app.toggleMobileMenu()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-stone-600 bg-amber-50/50 hover:bg-bee-yellow hover:text-bee-brown text-left text-lg"><i class="fa-solid fa-bullseye w-8 text-center"></i> Mục tiêu SMART</button>
-        <button onclick="app.switchTab('hive'); app.toggleMobileMenu()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-stone-600 bg-amber-50/50 hover:bg-bee-yellow hover:text-bee-brown text-left text-lg"><i class="fa-brands fa-hive w-8 text-center"></i> Tổ ong & Cây</button>
-        <button onclick="app.switchTab('why'); app.toggleMobileMenu()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-stone-600 bg-amber-50/50 hover:bg-bee-yellow hover:text-bee-brown text-left text-lg"><i class="fa-solid fa-magnifying-glass-chart w-8 text-center"></i> Tại sao trì hoãn?</button>
-        <button onclick="app.switchTab('stats'); app.toggleMobileMenu()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-stone-600 bg-amber-50/50 hover:bg-bee-yellow hover:text-bee-brown text-left text-lg"><i class="fa-solid fa-chart-pie w-8 text-center"></i> Thống kê & Nhật ký</button>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <main class="flex-1 p-4 md:p-8 lg:p-10 overflow-y-auto w-full max-w-6xl mx-auto">
-
-        <!-- ================= HOME TAB ================= -->
-        <section id="tab-home" class="tab-content space-y-8 animate-fade-in">
-            <!-- Hero Banner -->
-            <div class="bg-gradient-to-br from-amber-100 to-[#FFFDF9] border-2 border-amber-200 rounded-[2rem] p-6 md:p-10 relative overflow-hidden shadow-sm flex flex-col md:flex-row items-center gap-8">
-                <!-- Mascot Animated SVG -->
-                <div class="relative w-40 h-40 shrink-0 animate-float">
-                    <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-xl">
-                        <ellipse cx="80" cy="70" rx="25" ry="40" fill="#E2F4FF" stroke="#4A2E11" stroke-width="4" class="wing-l" />
-                        <ellipse cx="130" cy="70" rx="25" ry="40" fill="#E2F4FF" stroke="#4A2E11" stroke-width="4" class="wing-r" />
-                        <ellipse cx="105" cy="120" rx="60" ry="50" fill="#F9D034" stroke="#4A2E11" stroke-width="6"/>
-                        <path d="M85,75 C95,95 95,145 85,165" fill="none" stroke="#4A2E11" stroke-width="7" stroke-linecap="round"/>
-                        <path d="M115,75 C125,95 125,145 115,165" fill="none" stroke="#4A2E11" stroke-width="7" stroke-linecap="round"/>
-                        <circle cx="75" cy="115" r="9" fill="#FF8A8A" opacity="0.7"/>
-                        <circle cx="135" cy="115" r="9" fill="#FF8A8A" opacity="0.7"/>
-                        <circle cx="85" cy="105" r="7" fill="#4A2E11"/>
-                        <circle cx="125" cy="105" r="7" fill="#4A2E11"/>
-                        <circle cx="83" cy="102" r="2.5" fill="white"/>
-                        <circle cx="123" cy="102" r="2.5" fill="white"/>
-                        <path d="M100,120 Q105,130 110,120" fill="none" stroke="#4A2E11" stroke-width="5" stroke-linecap="round"/>
-                        <polygon points="165,120 185,115 185,125" fill="#4A2E11" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <div class="text-center md:text-left z-10 flex-1 space-y-4">
-                    <span id="hero-greeting" class="bg-white border-2 border-bee-yellow text-bee-brown font-black text-xs px-4 py-1.5 rounded-full uppercase tracking-widest shadow-sm">Chào mừng trở lại!</span>
-                    <h2 class="text-3xl md:text-4xl font-display font-black text-bee-brown leading-tight">BeeBee – Học từng chút, tiến bộ mỗi ngày.</h2>
-                    <p class="text-stone-600 font-bold text-lg" id="slogan-display">"BeeBee – Bee productive, Bee happy. 🐝"</p>
-                    <div class="pt-4 flex flex-wrap justify-center md:justify-start gap-3">
-                        <button onclick="app.switchTab('pomodoro')" class="bg-bee-brown hover:bg-stone-800 text-white font-bold px-6 py-3 rounded-2xl shadow-lg transition-transform hover:-translate-y-1">
-                            <i class="fa-solid fa-stopwatch mr-2"></i> Bắt đầu phiên học
-                        </button>
-                        <button onclick="app.rotateSlogan()" class="bg-white hover:bg-amber-50 text-bee-brown border-2 border-bee-border font-bold px-6 py-3 rounded-2xl transition-colors">
-                            <i class="fa-solid fa-rotate mr-2"></i> Đổi slogan
-                        </button>
-                    </div>
+    <main class="lg:ml-72 min-h-screen">
+        <header class="glass sticky top-0 z-40 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex justify-between items-center">
+            <button onclick="toggleSidebar()" class="lg:hidden text-2xl"><i class="fa-solid fa-bars"></i></button>
+            <h2 id="current-title" class="text-xl font-bold uppercase tracking-wider">Trang Chủ</h2>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-lg">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+                <div class="flex items-center gap-2 border-l pl-4 dark:border-slate-700">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">BS</div>
+                    <span class="hidden md:block font-semibold">Bác sĩ tương lai</span>
                 </div>
             </div>
+        </header>
 
-            <!-- Quick Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white border-2 border-bee-border p-5 rounded-3xl flex flex-col items-center justify-center gap-2 shadow-sm">
-                    <div class="w-12 h-12 bg-red-100 text-red-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fa-solid fa-fire"></i></div>
-                    <div class="text-center">
-                        <div class="text-2xl font-black text-stone-800" id="dash-streak">0 ngày</div>
-                        <div class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Chuỗi liên tiếp</div>
-                    </div>
-                </div>
-                <div class="bg-white border-2 border-bee-border p-5 rounded-3xl flex flex-col items-center justify-center gap-2 shadow-sm">
-                    <div class="w-12 h-12 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fa-solid fa-hourglass-half"></i></div>
-                    <div class="text-center">
-                        <div class="text-2xl font-black text-stone-800" id="dash-sessions">0</div>
-                        <div class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Phiên Pomodoro</div>
-                    </div>
-                </div>
-                <div class="bg-white border-2 border-bee-border p-5 rounded-3xl flex flex-col items-center justify-center gap-2 shadow-sm">
-                    <div class="w-12 h-12 bg-green-100 text-green-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fa-solid fa-check-double"></i></div>
-                    <div class="text-center">
-                        <div class="text-2xl font-black text-stone-800" id="dash-tasks">0 / 0</div>
-                        <div class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Nhiệm vụ hôm nay</div>
-                    </div>
-                </div>
-                <div class="bg-white border-2 border-bee-border p-5 rounded-3xl flex flex-col items-center justify-center gap-2 shadow-sm">
-                    <div class="w-12 h-12 bg-indigo-100 text-indigo-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fa-solid fa-medal"></i></div>
-                    <div class="text-center">
-                        <div class="text-2xl font-black text-stone-800" id="dash-badges">0 / 8</div>
-                        <div class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Huy hiệu mở khóa</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= TASKS TAB ================= -->
-        <section id="tab-tasks" class="tab-content hidden space-y-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 text-2xl"><i class="fa-solid fa-list-check"></i></div>
-                <div>
-                    <h2 class="text-2xl font-black text-stone-800">Quản lý nhiệm vụ (To-do List)</h2>
-                    <p class="text-sm font-bold text-stone-500">Hoàn thành để nhận mật ong nâng cấp tổ! (+10 🍯/việc)</p>
-                </div>
-            </div>
-
-            <!-- Task Form -->
-            <div class="bg-white border-2 border-bee-border rounded-3xl p-5 shadow-sm">
-                <form id="task-form" onsubmit="app.addTask(event)" class="flex flex-col md:flex-row gap-4">
-                    <input type="text" id="task-input" placeholder="Bạn cần làm việc gì hôm nay? (Ví dụ: Đọc 20 trang sách)" required class="flex-1 bg-stone-50 border-2 border-stone-200 rounded-2xl px-5 py-3.5 text-base font-bold focus:outline-none focus:border-bee-yellow focus:bg-white transition-colors">
-                    <div class="flex gap-3">
-                        <select id="task-priority" class="bg-stone-50 border-2 border-stone-200 rounded-2xl px-4 py-3.5 text-sm font-bold focus:outline-none focus:border-bee-yellow cursor-pointer">
-                            <option value="high">🔴 Ưu tiên Cao</option>
-                            <option value="medium" selected>🟠 Trung bình</option>
-                            <option value="low">🟢 Thấp</option>
-                        </select>
-                        <button type="submit" class="bg-bee-yellow hover:bg-bee-dark text-bee-brown font-black px-6 py-3.5 rounded-2xl transition-colors shrink-0 flex items-center gap-2">
-                            <i class="fa-solid fa-plus"></i> Thêm
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Task List -->
-            <div class="bg-white border-2 border-bee-border rounded-3xl overflow-hidden shadow-sm">
-                <div class="p-5 border-b border-stone-100 bg-stone-50 flex justify-between items-center">
-                    <span class="font-black text-stone-700">Danh sách việc hôm nay</span>
-                    <span class="text-xs font-black bg-stone-200 text-stone-600 px-3 py-1 rounded-full" id="task-count-badge">0</span>
-                </div>
-                <div id="task-list" class="divide-y divide-stone-100 flex flex-col min-h-[200px]">
-                    <!-- Tasks injected by JS -->
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= POMODORO TAB ================= -->
-        <section id="tab-pomodoro" class="tab-content hidden space-y-8">
-            <div class="text-center max-w-lg mx-auto">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-red-50 text-red-500 rounded-3xl text-3xl mb-4 rotate-12"><i class="fa-solid fa-stopwatch"></i></div>
-                <h2 class="text-3xl font-black text-stone-800">Đồng hồ Pomodoro</h2>
-                <p class="text-base font-bold text-stone-500 mt-2">Học tập trung không xao nhãng và nhận thưởng xứng đáng.</p>
-            </div>
-
-            <!-- Timer Card -->
-            <div class="bg-white border-2 border-bee-border rounded-[2.5rem] p-8 md:p-12 shadow-xl max-w-xl mx-auto relative overflow-hidden">
-                <!-- Modes -->
-                <div class="flex justify-center gap-3 mb-8 relative z-10">
-                    <button onclick="app.setTimerMode('study')" id="mode-study" class="px-6 py-2.5 rounded-full font-black text-sm transition-all bg-red-100 text-red-700 border-2 border-red-200 shadow-sm">Học tập (25p)</button>
-                    <button onclick="app.setTimerMode('break')" id="mode-break" class="px-6 py-2.5 rounded-full font-black text-sm transition-all bg-stone-100 text-stone-500 border-2 border-transparent hover:bg-stone-200">Nghỉ ngơi (5p)</button>
-                </div>
-
-                <!-- Clock Display -->
-                <div class="relative w-64 h-64 mx-auto flex items-center justify-center mb-10">
-                    <svg class="absolute inset-0 w-full h-full -rotate-90">
-                        <circle cx="128" cy="128" r="120" fill="none" stroke="#F5EFE6" stroke-width="12"></circle>
-                        <circle id="timer-progress" cx="128" cy="128" r="120" fill="none" stroke="#F9D034" stroke-width="12" stroke-linecap="round" stroke-dasharray="753.9" stroke-dashoffset="0" class="transition-all duration-1000 ease-linear"></circle>
-                    </svg>
-                    <div class="text-center z-10">
-                        <span id="timer-display" class="text-6xl font-black text-stone-800 tabular-nums tracking-tighter">25:00</span>
-                        <div id="timer-status-text" class="text-sm font-black text-amber-600 mt-1 uppercase tracking-widest">Sẵn sàng</div>
-                    </div>
-                </div>
-
-                <!-- Controls -->
-                <div class="flex justify-center gap-4 relative z-10">
-                    <button id="btn-timer-start" onclick="app.toggleTimer()" class="w-40 bg-bee-brown hover:bg-stone-800 text-white font-black px-6 py-4 rounded-2xl shadow-lg transition-transform hover:-translate-y-1 text-lg flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play"></i> Bắt đầu
-                    </button>
-                    <button onclick="app.resetTimer()" class="bg-stone-100 hover:bg-stone-200 text-stone-600 font-black px-6 py-4 rounded-2xl transition-colors border-2 border-stone-200">
-                        <i class="fa-solid fa-arrow-rotate-left"></i>
-                    </button>
-                </div>
-                
-                <!-- Rewards summary -->
-                <div class="mt-8 pt-6 border-t-2 border-stone-100 flex justify-center gap-12">
-                    <div class="text-center">
-                        <div class="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">Phiên hoàn thành</div>
-                        <div class="text-2xl font-black text-stone-800" id="pomo-count-display">0</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">Thưởng mật</div>
-                        <div class="text-2xl font-black text-amber-600" id="pomo-honey-display">+0 🍯</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= GOALS TAB ================= -->
-        <section id="tab-goals" class="tab-content hidden space-y-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 text-2xl"><i class="fa-solid fa-bullseye"></i></div>
-                <div>
-                    <h2 class="text-2xl font-black text-stone-800">Mục tiêu SMART</h2>
-                    <p class="text-sm font-bold text-stone-500">Cụ thể - Đo lường được - Khả thi - Thực tế - Có thời hạn.</p>
-                </div>
-            </div>
-
-            <div class="bg-white border-2 border-bee-border rounded-3xl p-6 shadow-sm">
-                <form onsubmit="app.addGoal(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-bold text-stone-500 uppercase mb-2">Tên mục tiêu</label>
-                        <input type="text" id="goal-input" placeholder="VD: Đạt IELTS 7.0 trước tháng 12" required class="w-full bg-stone-50 border-2 border-stone-200 rounded-2xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-bee-yellow">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-stone-500 uppercase mb-2">Phân loại</label>
-                        <select id="goal-type" class="w-full bg-stone-50 border-2 border-stone-200 rounded-2xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-bee-yellow">
-                            <option value="short">⚡ Ngắn hạn (Tuần/Tháng)</option>
-                            <option value="long">🏆 Dài hạn (Năm/Kỳ học)</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button type="submit" class="w-full bg-bee-yellow hover:bg-bee-dark text-bee-brown font-black px-4 py-3 rounded-2xl transition-colors">
-                            <i class="fa-solid fa-plus mr-1"></i> Tạo mục tiêu
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="goals-list">
-                <!-- Goals injected by JS -->
-            </div>
-        </section>
-
-        <!-- ================= HIVE & TREE TAB ================= -->
-        <section id="tab-hive" class="tab-content hidden space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- HIVE SYSTEM -->
-                <div class="bg-white border-2 border-bee-border rounded-[2rem] p-6 shadow-sm flex flex-col relative overflow-hidden">
-                    <div class="absolute -right-6 -top-6 text-8xl opacity-5"><i class="fa-brands fa-hive"></i></div>
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 text-xl"><i class="fa-brands fa-hive"></i></div>
-                        <h3 class="text-xl font-black text-stone-800">Hệ thống Tổ ong</h3>
-                    </div>
-                    <p class="text-sm font-bold text-stone-500 mb-6">Dùng mật ong hoàn thành task để xây dựng đế chế!</p>
-                    
-                    <div class="flex-1 flex flex-col items-center justify-center py-6 bg-amber-50/50 rounded-2xl border border-amber-100 mb-6">
-                        <div class="text-7xl mb-3 transform hover:scale-110 transition-transform" id="hive-icon">🍯</div>
-                        <h4 class="text-xl font-black text-amber-800" id="hive-title">Tổ Ong Sơ Khai</h4>
-                        <div class="text-xs font-bold text-amber-600 mt-1" id="hive-level">Cấp độ 1</div>
-                    </div>
-
-                    <div class="border-t-2 border-stone-100 pt-5">
-                        <div class="flex justify-between items-center text-sm font-black text-stone-700 mb-3">
-                            <span>Phí nâng cấp:</span>
-                            <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-lg"><span id="hive-cost">50</span> 🍯</span>
-                        </div>
-                        <button onclick="app.upgradeHive()" id="btn-upgrade-hive" class="w-full bg-bee-yellow hover:bg-bee-dark text-bee-brown font-black py-4 rounded-2xl transition-colors flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-arrow-up-right-dots"></i> Nâng cấp ngay
-                        </button>
-                    </div>
-                </div>
-
-                <!-- TREE OF KNOWLEDGE -->
-                <div class="bg-white border-2 border-bee-border rounded-[2rem] p-6 shadow-sm flex flex-col relative overflow-hidden">
-                    <div class="absolute -right-6 -top-6 text-8xl opacity-5"><i class="fa-solid fa-tree"></i></div>
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600 text-xl"><i class="fa-solid fa-seedling"></i></div>
-                        <h3 class="text-xl font-black text-stone-800">Cây tri thức</h3>
-                    </div>
-                    <p class="text-sm font-bold text-stone-500 mb-6">Học Pomodoro để tưới nước cho cây trưởng thành.</p>
-                    
-                    <div class="flex-1 flex flex-col items-center justify-center py-6 bg-green-50/50 rounded-2xl border border-green-100 mb-6">
-                        <div class="text-7xl mb-4 transform hover:scale-110 transition-transform" id="tree-icon">🌱</div>
-                        <h4 class="text-lg font-black text-green-800" id="tree-title">Mầm non nhú lộc</h4>
-                        
-                        <div class="w-full max-w-[200px] bg-stone-200 h-3 rounded-full mt-4 overflow-hidden border border-stone-300">
-                            <div id="tree-progress" class="bg-green-500 h-full transition-all duration-1000 ease-out" style="width: 0%"></div>
-                        </div>
-                        <div class="text-[11px] font-bold text-stone-500 mt-2" id="tree-desc">Cần thêm 1 phiên Pomodoro</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- BADGES -->
-            <div class="bg-white border-2 border-bee-border rounded-[2rem] p-6 shadow-sm">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-500 text-xl"><i class="fa-solid fa-medal"></i></div>
-                    <h3 class="text-xl font-black text-stone-800">Bộ sưu tập Huy hiệu</h3>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="badges-grid">
-                    <!-- Badges injected by JS -->
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= 5 WHYS TAB ================= -->
-        <section id="tab-why" class="tab-content hidden space-y-6">
-            <div class="bg-white border-2 border-bee-border rounded-[2.5rem] p-6 md:p-10 shadow-sm max-w-3xl mx-auto text-center">
-                <div class="w-16 h-16 bg-blue-100 text-blue-500 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-4"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
-                <h2 class="text-3xl font-black text-stone-800">Tại sao tôi trì hoãn?</h2>
-                <p class="text-base font-bold text-stone-500 mt-2 mb-8">Phương pháp "5 Why" giúp bạn tìm ra gốc rễ của sự lười biếng bằng cách tự vấn 5 lần liên tiếp.</p>
-
-                <!-- Wizard -->
-                <div id="why-wizard" class="bg-stone-50 border-2 border-stone-200 rounded-3xl p-6 md:p-8 text-left relative">
-                    <div class="text-xs font-black text-blue-600 uppercase tracking-widest mb-3" id="why-step">Câu hỏi 1 / 5</div>
-                    <h3 class="text-xl font-black text-stone-800 mb-6" id="why-question">Tại sao bạn lại đang trì hoãn việc học ngay lúc này?</h3>
-                    
-                    <textarea id="why-input" rows="3" placeholder="Nhập câu trả lời thành thật của bạn..." class="w-full bg-white border-2 border-stone-200 rounded-2xl p-4 text-sm font-bold focus:outline-none focus:border-blue-400 mb-4 resize-none"></textarea>
-                    
-                    <button onclick="app.nextWhyStep()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-black py-4 rounded-2xl transition-colors shadow-md">
-                        Tiếp tục <i class="fa-solid fa-arrow-right ml-2"></i>
-                    </button>
-                </div>
-
-                <!-- Result -->
-                <div id="why-result" class="hidden text-left">
-                    <div class="bg-green-50 border-2 border-green-200 rounded-3xl p-6 md:p-8">
-                        <h3 class="text-xl font-black text-green-800 mb-4"><i class="fa-solid fa-stethoscope mr-2"></i> Chẩn đoán từ BeeBee:</h3>
-                        <div id="why-answers-list" class="space-y-3 mb-6"></div>
-                        <div class="bg-white rounded-2xl p-5 border border-green-200 shadow-sm">
-                            <div class="text-sm font-black text-amber-600 mb-2"><i class="fa-solid fa-lightbulb"></i> Lời khuyên dành cho bạn:</div>
-                            <p class="text-sm font-bold text-stone-700 leading-relaxed" id="why-advice">Dù nguyên nhân là gì, bước đầu tiên luôn là khó nhất. Hãy dùng quy tắc 5 phút: Chỉ cần hứa với bản thân sẽ làm việc này đúng 5 phút thôi. Bắt đầu ngay nhé!</p>
+        <div class="p-6 max-w-7xl mx-auto">
+            
+            <section id="dashboard" class="tab-content active space-y-6">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold mb-4 inline-block italic">Cảm hứng mỗi ngày</span>
+                        <p id="quote-display" class="text-2xl md:text-3xl font-bold mb-4 leading-relaxed">"Kiến thức Y khoa là đại dương, hãy chèo lái bằng sự kiên trì."</p>
+                        <div class="flex gap-2">
+                            <button onclick="editQuote()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm transition"><i class="fa-solid fa-pen-to-square mr-2"></i>Chỉnh sửa</button>
                         </div>
                     </div>
-                    <div class="text-center mt-6">
-                        <button onclick="app.resetWhy()" class="text-sm font-black text-stone-500 hover:text-stone-800 underline">Khám phá một vấn đề khác</button>
+                    <i class="fa-solid fa-quote-right absolute -bottom-4 -right-4 text-9xl opacity-10"></i>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
+                        <p class="text-slate-500 text-xs font-bold uppercase">Giờ học</p>
+                        <p class="text-2xl font-black text-primary mt-1">128h</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
+                        <p class="text-slate-500 text-xs font-bold uppercase">Bài học</p>
+                        <p class="text-2xl font-black text-green-500 mt-1">45</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
+                        <p class="text-slate-500 text-xs font-bold uppercase">Câu hỏi</p>
+                        <p class="text-2xl font-black text-orange-500 mt-1">1,240</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
+                        <p class="text-slate-500 text-xs font-bold uppercase">Kỹ năng</p>
+                        <p class="text-2xl font-black text-purple-500 mt-1">12</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
+                        <p class="text-slate-500 text-xs font-bold uppercase">GPA</p>
+                        <p id="stat-gpa" class="text-2xl font-black text-red-500 mt-1">0.0</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
+                        <p class="text-slate-500 text-xs font-bold uppercase">Streak</p>
+                        <p class="text-2xl font-black text-yellow-500 mt-1">🔥 7</p>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- ================= STATS & DIARY TAB ================= -->
-        <section id="tab-stats" class="tab-content hidden space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Diary -->
-                <div class="bg-white border-2 border-bee-border rounded-[2rem] p-6 shadow-sm lg:col-span-1">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-pink-500 text-xl"><i class="fa-solid fa-face-smile"></i></div>
-                        <h3 class="text-xl font-black text-stone-800">Nhật ký cảm xúc</h3>
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
+                        <h3 class="font-bold mb-6 flex items-center gap-2"><i class="fa-solid fa-chart-line text-primary"></i> Tiến độ học tập</h3>
+                        <canvas id="mainChart" class="w-full"></canvas>
                     </div>
-                    
-                    <form onsubmit="app.addDiary(event)" class="space-y-5">
-                        <div>
-                            <label class="block text-xs font-bold text-stone-500 uppercase mb-2">Tâm trạng</label>
-                            <div class="flex justify-between gap-2">
-                                <button type="button" onclick="app.selectMood('happy', this)" class="mood-btn flex-1 py-3 text-2xl bg-amber-100 border-2 border-amber-400 rounded-xl transition-all">😀</button>
-                                <button type="button" onclick="app.selectMood('neutral', this)" class="mood-btn flex-1 py-3 text-2xl bg-stone-50 border-2 border-stone-200 rounded-xl hover:bg-stone-100 transition-all">😐</button>
-                                <button type="button" onclick="app.selectMood('tired', this)" class="mood-btn flex-1 py-3 text-2xl bg-stone-50 border-2 border-stone-200 rounded-xl hover:bg-stone-100 transition-all">🥱</button>
-                                <button type="button" onclick="app.selectMood('stressed', this)" class="mood-btn flex-1 py-3 text-2xl bg-stone-50 border-2 border-stone-200 rounded-xl hover:bg-stone-100 transition-all">🤯</button>
+                    <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold">Nhiệm vụ hôm nay</h3>
+                            <span id="todo-percent" class="text-xs font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded-full">0%</span>
+                        </div>
+                        <div class="space-y-3" id="todo-list">
+                            </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="competency" class="tab-content space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-darkcard p-8 rounded-3xl border dark:border-slate-700 shadow-sm">
+                        <h3 class="text-2xl font-black mb-6 tracking-tight">Thống kê năng lực</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                                <span>Điểm Lý thuyết</span>
+                                <span id="comp-theory" class="font-black text-primary text-xl">0.0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                                <span>Điểm Thực hành</span>
+                                <span id="comp-practice" class="font-black text-green-500 text-xl">0.0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                                <span>Điểm Case lâm sàng</span>
+                                <span id="comp-case" class="font-black text-purple-500 text-xl">0.0</span>
+                            </div>
+                            <div class="mt-6 border-t pt-6">
+                                <p class="text-slate-500 font-bold mb-2">GPA TỔNG KẾT</p>
+                                <p id="comp-gpa" class="text-5xl font-black text-slate-800 dark:text-white">0.0</p>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="bg-blue-600 rounded-3xl p-8 text-white shadow-xl flex flex-col justify-between">
                         <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="block text-xs font-bold text-stone-500 uppercase">Mức độ tập trung</label>
-                                <span class="text-xs font-black text-amber-600" id="focus-val">3/5</span>
+                            <h3 class="text-2xl font-black mb-6 italic"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI Đánh giá</h3>
+                            <div id="ai-evaluation" class="space-y-4">
+                                <p class="opacity-80">Đang cập nhật dữ liệu để AI phân tích...</p>
                             </div>
-                            <input type="range" id="diary-focus" min="1" max="5" value="3" oninput="document.getElementById('focus-val').innerText=this.value+'/5'" class="w-full accent-bee-yellow">
+                        </div>
+                        <div class="mt-8 p-4 bg-white/10 rounded-2xl">
+                            <p class="text-sm">Hệ thống tự động phân tích điểm và kỹ năng để gợi ý lộ trình học tập tối ưu.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="theory" class="tab-content space-y-6">
+                <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
+                    <div class="flex flex-col md:flex-row gap-4 justify-between mb-8">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="lib-search" placeholder="Tìm kiếm tài liệu..." class="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none focus:ring-2 ring-primary">
+                        </div>
+                        <select id="lib-filter" class="px-6 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none">
+                            <option value="all">Tất cả chuyên khoa</option>
+                            <option value="Giải phẫu">Giải phẫu</option>
+                            <option value="Nội khoa">Nội khoa</option>
+                            <option value="Nhi khoa">Nhi khoa</option>
+                        </select>
+                    </div>
+                    <div id="theory-library" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        </div>
+                </div>
+            </section>
+
+            <section id="grades" class="tab-content space-y-6">
+                <div class="bg-white dark:bg-darkcard p-8 rounded-3xl border dark:border-slate-700 shadow-sm">
+                    <h3 class="text-xl font-bold mb-6">Cập nhật điểm số mới nhất</h3>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold mb-2">Lý thuyết</label>
+                            <input type="number" id="input-theory" step="0.1" max="10" placeholder="0.0" class="w-full p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none">
                         </div>
                         <div>
-                            <input type="text" id="diary-note" placeholder="Ghi chú ngắn gọn (tùy chọn)..." class="w-full bg-stone-50 border-2 border-stone-200 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-bee-yellow">
+                            <label class="block text-sm font-bold mb-2">Thực hành</label>
+                            <input type="number" id="input-practice" step="0.1" max="10" placeholder="0.0" class="w-full p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none">
                         </div>
-                        <button type="submit" class="w-full bg-stone-800 hover:bg-black text-white font-black py-3 rounded-xl transition-colors">Lưu nhật ký</button>
-                    </form>
-
-                    <div class="mt-8">
-                        <h4 class="text-xs font-bold text-stone-500 uppercase mb-3">Lịch sử gần đây</h4>
-                        <div id="diary-list" class="space-y-2 max-h-48 overflow-y-auto pr-2">
-                            <!-- Injected by JS -->
+                        <div>
+                            <label class="block text-sm font-bold mb-2">Case lâm sàng</label>
+                            <input type="number" id="input-case" step="0.1" max="10" placeholder="0.0" class="w-full p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none">
                         </div>
                     </div>
+                    <button onclick="saveGrades()" class="mt-8 w-full py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition">LƯU DỮ LIỆU</button>
                 </div>
+            </section>
 
-                <!-- Stats Chart -->
-                <div class="bg-white border-2 border-bee-border rounded-[2rem] p-6 shadow-sm lg:col-span-2 flex flex-col">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center text-teal-600 text-xl"><i class="fa-solid fa-chart-column"></i></div>
-                        <h3 class="text-xl font-black text-stone-800">Thống kê hoạt động</h3>
-                    </div>
-
-                    <!-- CSS Bar Chart -->
-                    <div class="flex-1 bg-stone-50 border border-stone-200 rounded-2xl p-5 flex flex-col justify-end min-h-[250px]">
-                        <div class="flex justify-between items-end h-48 gap-2 pb-2 border-b-2 border-stone-200 px-2" id="chart-container">
-                            <!-- Columns injected by JS -->
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 mt-4">
-                        <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100 text-center">
-                            <div class="text-xs font-bold text-stone-500 uppercase mb-1">Tỷ lệ hoàn thành Task</div>
-                            <div class="text-2xl font-black text-bee-brown" id="stat-task-rate">0%</div>
-                        </div>
-                        <div class="bg-indigo-50 rounded-2xl p-4 border border-indigo-100 text-center">
-                            <div class="text-xs font-bold text-stone-500 uppercase mb-1">Mục tiêu đạt được</div>
-                            <div class="text-2xl font-black text-indigo-900" id="stat-goal-rate">0%</div>
-                        </div>
-                    </div>
+            <section id="practice" class="tab-content space-y-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold">Kỹ năng lâm sàng</h3>
+                    <button onclick="addSkill()" class="bg-primary text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-blue-500/20"><i class="fa-solid fa-plus mr-2"></i>Thêm kỹ năng</button>
                 </div>
-            </div>
-        </section>
+                <div id="skills-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    </div>
+            </section>
+
+            <section id="other-modules" class="tab-content text-center py-20">
+                <i class="fa-solid fa-screwdriver-wrench text-6xl text-slate-300 mb-6"></i>
+                <h3 class="text-2xl font-bold text-slate-400">Module này đang được xây dựng</h3>
+            </section>
+
+        </div>
     </main>
 
-    <!-- ỨNG DỤNG LÕI + TÍCH HỢP CLOUD FIREBASE -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Config (Fallback handled nếu không có key)
-        const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-        const firebaseConfig = JSON.parse(firebaseConfigStr);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'beebee-default';
-        
-        let db = null;
-        let auth = null;
-
-        if (Object.keys(firebaseConfig).length > 0) {
-            const fbApp = initializeApp(firebaseConfig);
-            auth = getAuth(fbApp);
-            db = getFirestore(fbApp);
-        }
-
-        // Web Audio API cho âm thanh Pomodoro
-        function playChime() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.5);
-                gain.gain.setValueAtTime(0, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.1);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 1);
-            } catch(e) { console.error("Audio block", e); }
-        }
-
-        // Đối tượng App toàn cục (Bắt buộc gán vào window để HTML nhìn thấy)
-        window.app = {
-            userId: null,
-            _initialized: false,
-            state: {
-                honey: 50,
-                streak: 1,
-                pomoCount: 0,
-                hiveLevel: 1,
-                tasks: [],
-                goals: [],
-                diaries: [],
-                mood: '😀',
-                whyAnswers: []
-            },
-            timer: {
-                interval: null,
-                timeLeft: 25 * 60,
-                isRunning: false,
-                mode: 'study',
-                totalStudyTime: 25 * 60,
-                totalBreakTime: 5 * 60
-            },
-            slogans: [
-                "BeeBee – Không trì hoãn, chỉ tiến bộ.",
-                "BeeBee – Chăm chỉ như ong, thành công mỗi ngày.",
-                "BeeBee – Biến việc học thành niềm vui.",
-                "BeeBee – Từng giọt mật nhỏ, từng bước tiến lớn.",
-                "BeeBee – Bee productive, Bee happy. 🐝"
+    <script>
+        /* --- CORE DATA & LOCAL STORAGE --- */
+        const defaultData = {
+            quote: "Học tập là hạt giống của hạnh phúc. Hãy bắt đầu ngay hôm nay!",
+            tasks: [
+                { id: 1, text: "Học lý thuyết Giải phẫu gan", done: false },
+                { id: 2, text: "Làm trắc nghiệm nội khoa", done: true },
+                { id: 3, text: "Xem video khám phổi", done: false }
             ],
-            sloganIdx: 4,
-            whyQuestions: [
-                "Tại sao bạn lại đang trì hoãn việc này?",
-                "Tại sao nguyên nhân đó lại xảy ra với bạn?",
-                "Tại sao điều đó lại là rào cản lớn?",
-                "Tại sao bạn không tìm cách khắc phục ngay?",
-                "Tại sao thói quen này cứ lặp lại?"
+            grades: { theory: 0, practice: 0, case: 0 },
+            skills: [
+                { id: 1, name: "Khám bụng", rating: 3, steps: ["Nhìn", "Nghe", "Gõ", "Sờ"] },
+                { id: 2, name: "Tiêm bắp", rating: 4, steps: ["Sát khuẩn", "Góc kim", "Rút nòng", "Bơm thuốc"] }
             ],
-            whyStep: 0,
-
-            init() {
-                // Tải local ngay lập tức để có giao diện nhanh nhất
-                this.loadDataLocal();
-                this.switchTab('home');
-                this.updateUI();
-
-                // Xác thực Firebase và liên kết tài khoản
-                if (auth) {
-                    const authenticate = async () => {
-                        try {
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                await signInWithCustomToken(auth, __initial_auth_token);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
-                        } catch(e) { console.error("Lỗi Auth:", e); }
-                    };
-                    authenticate();
-
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            this.userId = user.uid;
-                            // Cập nhật thẻ ID cá nhân hóa
-                            const idDisplay = document.getElementById('user-id-display');
-                            if(idDisplay) idDisplay.innerText = `ID: ${user.uid.substring(0, 6)}...`;
-                            const heroGreeting = document.getElementById('hero-greeting');
-                            if(heroGreeting) heroGreeting.innerText = `Chào ong thợ, ${user.uid.substring(0, 6)}!`;
-                            
-                            this.syncCloud(); // Bắt đầu lắng nghe Cloud
-                        }
-                    });
-                }
-            },
-
-            syncCloud() {
-                if (!this.userId || !db) return;
-                const docRef = doc(db, 'artifacts', appId, 'users', this.userId, 'appData', 'state');
-                
-                onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        // Nạp dữ liệu mây đè lên local nếu có
-                        this.state = { ...this.state, ...docSnap.data() };
-                        this.updateUI();
-                    } else {
-                        // Nếu mây trống (người mới), đưa dữ liệu hiện tại lên
-                        this.saveData();
-                    }
-                }, (error) => {
-                    console.error("Lỗi đồng bộ:", error);
-                });
-            },
-
-            loadDataLocal() {
-                const saved = localStorage.getItem('beebee_data');
-                if (saved) {
-                    try { this.state = { ...this.state, ...JSON.parse(saved) }; } 
-                    catch(e) { console.error(e); }
-                } else if (this.state.tasks.length === 0) {
-                    // Mặc định task chào mừng
-                    this.state.tasks.push({id: 1, text: 'Làm quen với ứng dụng BeeBee', priority: 'medium', done: true});
-                    this.state.honey += 10;
-                }
-            },
-
-            saveData() {
-                // Lưu vào Local Storage
-                localStorage.setItem('beebee_data', JSON.stringify(this.state));
-                
-                // Đồng bộ lên Cloud
-                if (this.userId && db) {
-                    const docRef = doc(db, 'artifacts', appId, 'users', this.userId, 'appData', 'state');
-                    setDoc(docRef, this.state, { merge: true }).catch(e => console.error(e));
-                }
-                this.updateUI();
-            },
-
-            // Navigation
-            switchTab(tabId) {
-                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('nav-active'));
-                
-                document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-                
-                const navBtn = document.getElementById(`nav-${tabId}`);
-                if(navBtn) navBtn.classList.add('nav-active');
-            },
-
-            toggleMobileMenu() {
-                const menu = document.getElementById('mobile-menu');
-                const icon = document.getElementById('mobile-menu-icon');
-                if(menu.classList.contains('hidden')) {
-                    menu.classList.remove('hidden');
-                    icon.className = 'fa-solid fa-xmark';
-                } else {
-                    menu.classList.add('hidden');
-                    icon.className = 'fa-solid fa-bars';
-                }
-            },
-
-            rotateSlogan() {
-                this.sloganIdx = (this.sloganIdx + 1) % this.slogans.length;
-                document.getElementById('slogan-display').innerText = `"${this.slogans[this.sloganIdx]}"`;
-            },
-
-            // UI Updater
-            updateUI() {
-                document.getElementById('status-honey').innerText = this.state.honey;
-                document.getElementById('mobile-honey').innerText = this.state.honey;
-                document.getElementById('dash-streak').innerText = `${this.state.streak} ngày`;
-                document.getElementById('dash-sessions').innerText = this.state.pomoCount;
-                
-                const doneTasks = this.state.tasks.filter(t=>t.done).length;
-                document.getElementById('dash-tasks').innerText = `${doneTasks} / ${this.state.tasks.length}`;
-                
-                let rank = "Ong Mới Vào Nghề";
-                if(this.state.honey >= 150) rank = "Ong Thợ Chăm Chỉ";
-                if(this.state.honey >= 500) rank = "Chiến Binh Mật Ong";
-                if(this.state.honey >= 1000) rank = "Nữ Hoàng Ong 👑";
-                document.getElementById('status-rank').innerText = rank;
-
-                this.renderTasks();
-                this.renderGoals();
-                this.renderHive();
-                this.renderBadges();
-                this.renderStats();
-            },
-
-            // --- TASKS ---
-            addTask(e) {
-                e.preventDefault();
-                const input = document.getElementById('task-input');
-                const priority = document.getElementById('task-priority').value;
-                if(!input.value.trim()) return;
-                
-                this.state.tasks.unshift({
-                    id: Date.now(),
-                    text: input.value.trim(),
-                    priority: priority,
-                    done: false
-                });
-                input.value = '';
-                this.saveData();
-            },
-            toggleTask(id) {
-                const task = this.state.tasks.find(t => t.id === id);
-                if(task) {
-                    task.done = !task.done;
-                    if(task.done) this.state.honey += 10;
-                    else this.state.honey = Math.max(0, this.state.honey - 10);
-                    this.saveData();
-                }
-            },
-            deleteTask(id) {
-                this.state.tasks = this.state.tasks.filter(t => t.id !== id);
-                this.saveData();
-            },
-            renderTasks() {
-                const list = document.getElementById('task-list');
-                const badge = document.getElementById('task-count-badge');
-                
-                const pending = this.state.tasks.filter(t=>!t.done).length;
-                badge.innerText = `${pending} việc`;
-
-                if(this.state.tasks.length === 0) {
-                    list.innerHTML = `<div class="p-8 text-center text-stone-400 font-bold">Chưa có nhiệm vụ nào. Nhập ngay để bắt đầu!</div>`;
-                    return;
-                }
-
-                list.innerHTML = this.state.tasks.map(t => {
-                    const color = t.priority === 'high' ? 'bg-red-100 text-red-600' : t.priority === 'medium' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600';
-                    const lbl = t.priority === 'high' ? 'Cao' : t.priority === 'medium' ? 'TB' : 'Thấp';
-                    return `
-                        <div class="flex items-center justify-between p-5 hover:bg-stone-50 transition-colors group">
-                            <div class="flex items-center gap-4 flex-1">
-                                <div class="w-6 h-6 border-2 rounded-md flex items-center justify-center cursor-pointer transition-colors ${t.done ? 'bg-bee-yellow border-bee-yellow text-bee-brown' : 'border-stone-300'}" onclick="app.toggleTask(${t.id})">
-                                    ${t.done ? '<i class="fa-solid fa-check text-sm"></i>' : ''}
-                                </div>
-                                <span class="font-bold text-base ${t.done ? 'line-through text-stone-400' : 'text-stone-700'}">${t.text}</span>
-                                <span class="text-[10px] font-black uppercase px-2 py-1 rounded-md ${color}">${lbl}</span>
-                            </div>
-                            <button onclick="app.deleteTask(${t.id})" class="text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-            },
-
-            // --- POMODORO ---
-            setTimerMode(mode) {
-                if(this.timer.isRunning) this.toggleTimer();
-                this.timer.mode = mode;
-                this.timer.timeLeft = mode === 'study' ? this.timer.totalStudyTime : this.timer.totalBreakTime;
-                
-                const btnStudy = document.getElementById('mode-study');
-                const btnBreak = document.getElementById('mode-break');
-                
-                if(mode === 'study') {
-                    btnStudy.className = "px-6 py-2.5 rounded-full font-black text-sm transition-all bg-red-100 text-red-700 border-2 border-red-200 shadow-sm";
-                    btnBreak.className = "px-6 py-2.5 rounded-full font-black text-sm transition-all bg-stone-100 text-stone-500 border-2 border-transparent hover:bg-stone-200";
-                    document.getElementById('timer-status-text').innerText = "Thời gian học";
-                    document.getElementById('timer-status-text').className = "text-sm font-black text-red-500 mt-1 uppercase tracking-widest";
-                    document.getElementById('timer-progress').setAttribute('stroke', '#ef4444');
-                } else {
-                    btnBreak.className = "px-6 py-2.5 rounded-full font-black text-sm transition-all bg-green-100 text-green-700 border-2 border-green-200 shadow-sm";
-                    btnStudy.className = "px-6 py-2.5 rounded-full font-black text-sm transition-all bg-stone-100 text-stone-500 border-2 border-transparent hover:bg-stone-200";
-                    document.getElementById('timer-status-text').innerText = "Nghỉ ngơi";
-                    document.getElementById('timer-status-text').className = "text-sm font-black text-green-500 mt-1 uppercase tracking-widest";
-                    document.getElementById('timer-progress').setAttribute('stroke', '#22c55e');
-                }
-                
-                this.updateTimerDisplay();
-            },
-            toggleTimer() {
-                const btn = document.getElementById('btn-timer-start');
-                const dot = document.getElementById('pomo-active-dot');
-                
-                if(this.timer.isRunning) {
-                    clearInterval(this.timer.interval);
-                    this.timer.isRunning = false;
-                    btn.innerHTML = '<i class="fa-solid fa-play"></i> Tiếp tục';
-                    btn.classList.remove('bg-red-500'); btn.classList.add('bg-bee-brown');
-                    dot.classList.add('hidden');
-                } else {
-                    this.timer.isRunning = true;
-                    btn.innerHTML = '<i class="fa-solid fa-pause"></i> Tạm dừng';
-                    btn.classList.remove('bg-bee-brown'); btn.classList.add('bg-red-500');
-                    dot.classList.remove('hidden');
-                    
-                    this.timer.interval = setInterval(() => {
-                        this.timer.timeLeft--;
-                        this.updateTimerDisplay();
-                        
-                        if(this.timer.timeLeft <= 0) {
-                            clearInterval(this.timer.interval);
-                            this.timer.isRunning = false;
-                            playChime();
-                            dot.classList.add('hidden');
-                            
-                            if(this.timer.mode === 'study') {
-                                this.state.pomoCount++;
-                                this.state.honey += 25;
-                                this.saveData();
-                                alert("🎉 Tuyệt vời! Bạn đã hoàn thành 25 phút tập trung. Hãy nghỉ ngơi 5 phút nhé.");
-                                this.setTimerMode('break');
-                            } else {
-                                alert("⏰ Đã hết thời gian nghỉ! Quay lại học thôi nào.");
-                                this.setTimerMode('study');
-                            }
-                        }
-                    }, 1000);
-                }
-            },
-            resetTimer() {
-                if(this.timer.isRunning) this.toggleTimer();
-                this.timer.timeLeft = this.timer.mode === 'study' ? this.timer.totalStudyTime : this.timer.totalBreakTime;
-                this.updateTimerDisplay();
-            },
-            updateTimerDisplay() {
-                const m = Math.floor(this.timer.timeLeft / 60).toString().padStart(2, '0');
-                const s = (this.timer.timeLeft % 60).toString().padStart(2, '0');
-                document.getElementById('timer-display').innerText = `${m}:${s}`;
-                
-                const total = this.timer.mode === 'study' ? this.timer.totalStudyTime : this.timer.totalBreakTime;
-                const percent = this.timer.timeLeft / total;
-                const offset = 753.9 - (percent * 753.9);
-                document.getElementById('timer-progress').style.strokeDashoffset = offset;
-
-                document.getElementById('pomo-count-display').innerText = this.state.pomoCount;
-                document.getElementById('pomo-honey-display').innerText = `+${this.state.pomoCount * 25} 🍯`;
-            },
-
-            // --- GOALS ---
-            addGoal(e) {
-                e.preventDefault();
-                const input = document.getElementById('goal-input');
-                const type = document.getElementById('goal-type').value;
-                if(!input.value.trim()) return;
-
-                this.state.goals.push({
-                    id: Date.now(),
-                    title: input.value.trim(),
-                    type: type,
-                    done: false
-                });
-                input.value = '';
-                this.saveData();
-            },
-            toggleGoal(id) {
-                const goal = this.state.goals.find(g => g.id === id);
-                if(goal) {
-                    goal.done = !goal.done;
-                    if(goal.done) this.state.honey += 50;
-                    else this.state.honey = Math.max(0, this.state.honey - 50);
-                    this.saveData();
-                }
-            },
-            deleteGoal(id) {
-                this.state.goals = this.state.goals.filter(g => g.id !== id);
-                this.saveData();
-            },
-            renderGoals() {
-                const list = document.getElementById('goals-list');
-                if(this.state.goals.length === 0) {
-                    list.innerHTML = `<div class="col-span-full bg-stone-50 rounded-2xl p-6 text-center text-stone-400 font-bold border-2 border-dashed border-stone-200">Hãy tạo mục tiêu SMART đầu tiên của bạn!</div>`;
-                    return;
-                }
-
-                list.innerHTML = this.state.goals.map(g => {
-                    const tag = g.type === 'long' ? '🏆 Dài hạn' : '⚡ Ngắn hạn';
-                    const tagClass = g.type === 'long' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700';
-                    return `
-                        <div class="bg-white border-2 border-stone-100 rounded-2xl p-5 shadow-sm flex flex-col gap-3">
-                            <div class="flex justify-between items-start">
-                                <span class="text-[10px] font-black uppercase px-2 py-1 rounded-md ${tagClass}">${tag}</span>
-                                <button onclick="app.deleteGoal(${g.id})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
-                            </div>
-                            <h4 class="font-bold text-stone-800 ${g.done ? 'line-through text-stone-400' : ''}">${g.title}</h4>
-                            <div class="mt-auto pt-2 flex justify-between items-center">
-                                <div class="w-2/3 bg-stone-100 h-2 rounded-full overflow-hidden">
-                                    <div class="h-full ${g.done ? 'bg-green-500 w-full' : 'bg-amber-400 w-1/4'}"></div>
-                                </div>
-                                <button onclick="app.toggleGoal(${g.id})" class="text-xs font-black px-3 py-1.5 rounded-lg border-2 ${g.done ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}">
-                                    ${g.done ? 'Hoàn thành' : 'Đánh dấu xong'}
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            },
-
-            // --- HIVE & TREE ---
-            renderHive() {
-                const cost = this.state.hiveLevel * 50;
-                document.getElementById('hive-cost').innerText = cost;
-                
-                let title = "Tổ Ong Sơ Khai"; let icon = "🍯";
-                if(this.state.hiveLevel === 2) { title = "Tổ Ong Ấm Cúng"; icon = "🏠"; }
-                if(this.state.hiveLevel === 3) { title = "Pháo Đài Mật Ngọt"; icon = "🏰"; }
-                if(this.state.hiveLevel >= 4) { title = "Đế Chế Hoàng Gia"; icon = "👑"; }
-                
-                document.getElementById('hive-title').innerText = title;
-                document.getElementById('hive-icon').innerText = icon;
-                document.getElementById('hive-level').innerText = `Cấp độ ${this.state.hiveLevel}`;
-
-                const btn = document.getElementById('btn-upgrade-hive');
-                if(this.state.hiveLevel >= 4) {
-                    btn.disabled = true; btn.innerText = "Đã đạt cấp tối đa"; btn.classList.add('opacity-50');
-                } else if(this.state.honey < cost) {
-                    btn.disabled = true; btn.innerHTML = `Thiếu ${cost - this.state.honey} 🍯`; btn.classList.add('opacity-50');
-                } else {
-                    btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-arrow-up-right-dots"></i> Nâng cấp ngay`; btn.classList.remove('opacity-50');
-                }
-
-                let tTitle = "Mầm non nhú lộc"; let tIcon = "🌱"; let tPct = 10; let tDesc = "Cần thêm phiên Pomodoro";
-                if(this.state.pomoCount >= 2) { tTitle = "Cây non đâm chồi"; tIcon = "🌿"; tPct = 40; }
-                if(this.state.pomoCount >= 5) { tTitle = "Đại thụ sum suê"; tIcon = "🌳"; tPct = 70; }
-                if(this.state.pomoCount >= 10) { tTitle = "Nở rộ hoa quả"; tIcon = "🌸"; tPct = 100; tDesc = "Đã phát triển hoàn thiện!"; }
-
-                document.getElementById('tree-title').innerText = tTitle;
-                document.getElementById('tree-icon').innerText = tIcon;
-                document.getElementById('tree-progress').style.width = `${tPct}%`;
-                document.getElementById('tree-desc').innerText = tDesc;
-            },
-            upgradeHive() {
-                const cost = this.state.hiveLevel * 50;
-                if(this.state.honey >= cost && this.state.hiveLevel < 4) {
-                    this.state.honey -= cost;
-                    this.state.hiveLevel++;
-                    this.saveData();
-                    alert("🎉 Nâng cấp Tổ ong thành công!");
-                }
-            },
-
-            // --- 5 WHYS ---
-            nextWhyStep() {
-                const input = document.getElementById('why-input');
-                if(!input.value.trim()) return alert("Hãy nhập câu trả lời nhé!");
-                
-                this.state.whyAnswers.push(input.value.trim());
-                input.value = '';
-                this.whyStep++;
-
-                if(this.whyStep < 5) {
-                    document.getElementById('why-step').innerText = `Câu hỏi ${this.whyStep + 1} / 5`;
-                    document.getElementById('why-question').innerText = this.whyQuestions[this.whyStep];
-                } else {
-                    document.getElementById('why-wizard').classList.add('hidden');
-                    const res = document.getElementById('why-result');
-                    res.classList.remove('hidden');
-                    
-                    document.getElementById('why-answers-list').innerHTML = this.state.whyAnswers.map((ans, i) => `
-                        <div class="text-sm border-l-4 border-green-300 pl-3">
-                            <span class="font-black text-green-900">Why ${i+1}:</span> <span class="font-bold text-stone-600">${ans}</span>
-                        </div>
-                    `).join('');
-                }
-            },
-            resetWhy() {
-                this.state.whyAnswers = [];
-                this.whyStep = 0;
-                document.getElementById('why-wizard').classList.remove('hidden');
-                document.getElementById('why-result').classList.add('hidden');
-                document.getElementById('why-step').innerText = `Câu hỏi 1 / 5`;
-                document.getElementById('why-question').innerText = this.whyQuestions[0];
-            },
-
-            // --- STATS & DIARY ---
-            selectMood(mood, el) {
-                this.state.mood = el.innerText;
-                document.querySelectorAll('.mood-btn').forEach(btn => {
-                    btn.classList.remove('bg-amber-100', 'border-amber-400');
-                    btn.classList.add('bg-stone-50', 'border-stone-200');
-                });
-                el.classList.remove('bg-stone-50', 'border-stone-200');
-                el.classList.add('bg-amber-100', 'border-amber-400');
-            },
-            addDiary(e) {
-                e.preventDefault();
-                const focus = document.getElementById('diary-focus').value;
-                const note = document.getElementById('diary-note').value;
-                
-                this.state.diaries.unshift({
-                    date: new Date().toLocaleDateString('vi-VN'),
-                    mood: this.state.mood,
-                    focus: focus,
-                    note: note || 'Học tập bình thường.'
-                });
-                document.getElementById('diary-note').value = '';
-                this.saveData();
-            },
-            renderStats() {
-                const list = document.getElementById('diary-list');
-                if(this.state.diaries.length === 0) list.innerHTML = `<div class="text-xs text-stone-400">Chưa có ghi chép nào.</div>`;
-                else {
-                    list.innerHTML = this.state.diaries.map(d => `
-                        <div class="bg-stone-50 border border-stone-100 p-3 rounded-xl flex items-center gap-3">
-                            <div class="text-2xl">${d.mood}</div>
-                            <div>
-                                <div class="text-xs font-black text-stone-700">${d.note}</div>
-                                <div class="text-[10px] font-bold text-stone-400">${d.date} • Tập trung: ${d.focus}/5</div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-
-                const chart = document.getElementById('chart-container');
-                const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-                const values = [1, 3, 2, 5, 4, 2, this.state.pomoCount];
-                
-                chart.innerHTML = values.map((val, i) => {
-                    const height = Math.min(val * 20 + 10, 160);
-                    const isToday = i === 6;
-                    return `
-                        <div class="flex flex-col items-center gap-2 group flex-1">
-                            <div class="w-full max-w-[30px] rounded-t-lg transition-all relative ${isToday ? 'bg-bee-dark' : 'bg-stone-300 group-hover:bg-amber-300'}" style="height: ${height}px">
-                                <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-black bg-stone-800 text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100">${val}</span>
-                            </div>
-                            <span class="text-[10px] font-bold ${isToday ? 'text-bee-dark' : 'text-stone-400'}">${days[i]}</span>
-                        </div>
-                    `;
-                }).join('');
-
-                const tRate = this.state.tasks.length ? Math.round((this.state.tasks.filter(t=>t.done).length / this.state.tasks.length)*100) : 0;
-                const gRate = this.state.goals.length ? Math.round((this.state.goals.filter(g=>g.done).length / this.state.goals.length)*100) : 0;
-                document.getElementById('stat-task-rate').innerText = `${tRate}%`;
-                document.getElementById('stat-goal-rate').innerText = `${gRate}%`;
-            },
-            renderBadges() {
-                const badges = [
-                    { id: 1, name: "Ong Mới Tới", icon: "🌱", cond: true },
-                    { id: 2, name: "Thợ Xây Tổ", icon: "🏠", cond: this.state.hiveLevel > 1 },
-                    { id: 3, name: "Kỷ Luật Sắt", icon: "⏱️", cond: this.state.pomoCount > 0 },
-                    { id: 4, name: "Vua Checklist", icon: "✅", cond: this.state.tasks.filter(t=>t.done).length >= 3 },
-                    { id: 5, name: "Cây Đại Thụ", icon: "🌳", cond: this.state.pomoCount >= 5 },
-                    { id: 6, name: "Siêu Tập Trung", icon: "🔥", cond: this.state.pomoCount >= 10 },
-                    { id: 7, name: "Mục Tiêu Vàng", icon: "🎯", cond: this.state.goals.filter(g=>g.done).length >= 1 },
-                    { id: 8, name: "Nữ Hoàng Ong", icon: "👑", cond: this.state.honey >= 500 }
-                ];
-                
-                const earned = badges.filter(b=>b.cond).length;
-                document.getElementById('dash-badges').innerText = `${earned} / 8`;
-
-                document.getElementById('badges-grid').innerHTML = badges.map(b => `
-                    <div class="border-2 rounded-2xl p-4 text-center transition-all ${b.cond ? 'bg-amber-50 border-amber-200' : 'bg-stone-50 border-stone-200 grayscale opacity-50'}">
-                        <div class="text-3xl mb-2">${b.icon}</div>
-                        <h4 class="text-xs font-black text-stone-800">${b.name}</h4>
-                        <div class="mt-2 text-[9px] font-bold px-2 py-0.5 rounded-full inline-block ${b.cond ? 'bg-amber-200 text-amber-800' : 'bg-stone-200 text-stone-500'}">
-                            ${b.cond ? 'Đã mở' : 'Khóa'}
-                        </div>
-                    </div>
-                `).join('');
-            }
+            library: [
+                { title: "Giải phẫu chi trên", tag: "Giải phẫu", icon: "fa-bone" },
+                { title: "Điều trị tăng huyết áp", tag: "Nội khoa", icon: "fa-heart-pulse" },
+                { title: "Phát triển tâm thần vận động", tag: "Nhi khoa", icon: "fa-child" }
+            ]
         };
 
-        // Kích hoạt App sau khi tải xong trang
-        document.addEventListener('DOMContentLoaded', () => window.app.init());
+        let appData = JSON.parse(localStorage.getItem('medProData')) || defaultData;
+
+        function save() {
+            localStorage.setItem('medProData', JSON.stringify(appData));
+            refreshUI();
+        }
+
+        /* --- UI COMPONENTS --- */
+        const navItems = [
+            { id: 'dashboard', icon: 'fa-gauge-high', text: 'Trang chủ' },
+            { id: 'competency', icon: 'fa-id-card-clip', text: 'Hồ sơ năng lực' },
+            { id: 'theory', icon: 'fa-book-medical', text: 'Module Lý thuyết' },
+            { id: 'practice', icon: 'fa-stethoscope', text: 'Module Thực hành' },
+            { id: 'grades', icon: 'fa-star', text: 'Quản lý điểm' },
+            { id: 'cases', icon: 'fa-user-doctor', text: 'Case lâm sàng' },
+            { id: 'habits', icon: 'fa-brain', text: 'Thói quen' },
+            { id: 'ai-asst', icon: 'fa-robot', text: 'AI Assistant' },
+            { id: 'gamify', icon: 'fa-trophy', text: 'Gamification' },
+            { id: 'notif', icon: 'fa-bell', text: 'Thông báo' }
+        ];
+
+        function renderNav() {
+            const nav = document.getElementById('main-nav');
+            nav.innerHTML = navItems.map(item => `
+                <button onclick="switchTab('${item.id}', '${item.text}')" 
+                        class="sidebar-item w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl font-semibold transition-all group"
+                        id="nav-${item.id}">
+                    <i class="fa-solid ${item.icon} w-6 group-hover:scale-110"></i>
+                    <span>${item.text}</span>
+                </button>
+            `).join('');
+            document.getElementById('nav-dashboard').classList.add('active');
+        }
+
+        function switchTab(id, title) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            
+            const target = document.getElementById(id) || document.getElementById('other-modules');
+            target.classList.add('active');
+            document.getElementById(`nav-${id}`).classList.add('active');
+            document.getElementById('current-title').innerText = title;
+
+            if(window.innerWidth < 1024) toggleSidebar();
+        }
+
+        /* --- MODULE: DASHBOARD --- */
+        function renderTodo() {
+            const list = document.getElementById('todo-list');
+            list.innerHTML = appData.tasks.map((t, index) => `
+                <div class="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer">
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTodo(${index})" class="w-5 h-5 rounded accent-primary">
+                    <span class="${t.done ? 'line-through opacity-50' : ''}">${t.text}</span>
+                </div>
+            `).join('');
+            
+            const doneCount = appData.tasks.filter(t => t.done).length;
+            const percent = Math.round((doneCount / appData.tasks.length) * 100) || 0;
+            document.getElementById('todo-percent').innerText = percent + '%';
+        }
+
+        function toggleTodo(index) {
+            appData.tasks[index].done = !appData.tasks[index].done;
+            save();
+        }
+
+        function editQuote() {
+            const q = prompt("Nhập câu nói động lực mới:", appData.quote);
+            if(q) { appData.quote = q; save(); }
+        }
+
+        /* --- MODULE: PRACTICE --- */
+        function renderSkills() {
+            const list = document.getElementById('skills-list');
+            list.innerHTML = appData.skills.map((s, idx) => `
+                <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-bold text-lg">${s.name}</h4>
+                        <button onclick="deleteSkill(${idx})" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <div class="flex text-yellow-400 gap-1 mb-4">
+                        ${Array(5).fill(0).map((_, i) => `<i class="${i < s.rating ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
+                    </div>
+                    <div class="space-y-2 border-t pt-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-2">Checklist</p>
+                        ${s.steps.map(step => `
+                            <div class="flex items-center gap-2 text-sm">
+                                <i class="fa-solid fa-check text-green-500"></i> ${step}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addSkill() {
+            const name = prompt("Tên kỹ năng mới:");
+            if(name) {
+                appData.skills.push({ id: Date.now(), name, rating: 1, steps: ["Chuẩn bị", "Tiến hành", "Kết thúc"] });
+                save();
+            }
+        }
+
+        function deleteSkill(idx) {
+            appData.skills.splice(idx, 1);
+            save();
+        }
+
+        /* --- MODULE: GRADES & COMPETENCY --- */
+        function saveGrades() {
+            appData.grades.theory = parseFloat(document.getElementById('input-theory').value) || 0;
+            appData.grades.practice = parseFloat(document.getElementById('input-practice').value) || 0;
+            appData.grades.case = parseFloat(document.getElementById('input-case').value) || 0;
+            save();
+            alert("Đã cập nhật điểm số!");
+        }
+
+        function refreshUI() {
+            // Update Dashboard display
+            document.getElementById('quote-display').innerText = `"${appData.quote}"`;
+            renderTodo();
+            renderSkills();
+
+            // Update Competency display
+            const g = appData.grades;
+            document.getElementById('comp-theory').innerText = g.theory.toFixed(1);
+            document.getElementById('comp-practice').innerText = g.practice.toFixed(1);
+            document.getElementById('comp-case').innerText = g.case.toFixed(1);
+            
+            const gpa = ((g.theory + g.practice + g.case) / 3).toFixed(1);
+            document.getElementById('comp-gpa').innerText = gpa;
+            document.getElementById('stat-gpa').innerText = gpa;
+
+            // AI Evaluation Logic
+            const evalBox = document.getElementById('ai-evaluation');
+            let evals = [];
+            if(g.theory < 7) evals.push(`<div class="p-3 bg-red-500/20 rounded-xl">⚠️ Lý thuyết còn yếu, hãy ôn tập lại các Module PDF.</div>`);
+            if(g.practice < 7) evals.push(`<div class="p-3 bg-orange-500/20 rounded-xl">⚠️ Kỹ năng lâm sàng cần thực hiện nhiều hơn.</div>`);
+            
+            const weakSkill = appData.skills.find(s => s.rating < 3);
+            if(weakSkill) evals.push(`<div class="p-3 bg-yellow-500/20 rounded-xl">📍 Cải thiện kỹ năng: ${weakSkill.name}</div>`);
+            
+            if(evals.length === 0) evals.push(`<div class="p-3 bg-green-500/20 rounded-xl">✅ Năng lực cân bằng tốt. Tiếp tục phát huy!</div>`);
+            evalBox.innerHTML = evals.join('');
+
+            // Library
+            document.getElementById('theory-library').innerHTML = appData.library.map(doc => `
+                <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center gap-4 hover:ring-1 ring-primary transition cursor-pointer">
+                    <div class="w-12 h-12 bg-white dark:bg-darkcard rounded-xl flex items-center justify-center text-primary shadow-sm">
+                        <i class="fa-solid ${doc.icon} text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm">${doc.title}</h4>
+                        <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">${doc.tag}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /* --- THEME & UTILS --- */
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            icon.className = document.documentElement.classList.contains('dark') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        }
+
+        /* --- CHART JS --- */
+        function initChart() {
+            const ctx = document.getElementById('mainChart');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+                    datasets: [{
+                        label: 'Số giờ học',
+                        data: [2, 4, 3, 5, 2, 8, 4],
+                        borderColor: '#2563eb',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        // Initialize App
+        renderNav();
+        refreshUI();
+        initChart();
     </script>
 </body>
 </html>
-
-
-```
-
-
