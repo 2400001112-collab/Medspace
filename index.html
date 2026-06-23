@@ -3,21 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Phòng Khám Siêu Cấp Nhí Nhố - Bệnh Nhân Ngẫu Nhiên</title>
+  <title>Phòng Khám Siêu Cấp Nhí Nhố - Phiên Bản Lâm Sàng Nâng Cao</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Google Fonts: Quicksand (Phông chữ tròn hoạt hình cực dễ thương) -->
+  <!-- Google Fonts: Quicksand -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   
-  <!-- FontAwesome Icons for Cartoon Elements -->
+  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Confetti Effects -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <!-- Chart.js for Advanced Dashboard -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <!-- Vue.js 3 Global Build -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -96,7 +99,7 @@
 
   <div id="app" class="p-3 sm:p-6 max-w-6xl mx-auto" v-cloak>
     
-    <!-- SECTION 0: ONBOARDING SCREEN (Chưa có tên bác sĩ) -->
+    <!-- SECTION 0: ONBOARDING SCREEN -->
     <div v-if="!doctor.name" class="flex items-center justify-center min-h-[85vh]">
       <div class="cartoon-card bg-white dark:bg-slate-800 p-6 sm:p-10 rounded-3xl max-w-md w-full text-center relative overflow-hidden">
         <div class="absolute -top-10 -right-10 w-24 h-24 bg-pink-300 rounded-full opacity-50 blur-xl"></div>
@@ -106,8 +109,8 @@
           🩺 <span class="text-4xl">🏥</span>
         </div>
         
-        <h1 class="text-3xl font-extrabold text-rose-500 mb-2">BÁC SĨ TẬP SỰ!</h1>
-        <p class="text-slate-600 dark:text-slate-300 text-sm mb-6">Chào mừng đồng chí đến với phòng khám hoạt hình siêu đáng yêu. Xin mời đăng ký Thẻ Bác Sĩ để bắt đầu nhận ca bệnh nhé!</p>
+        <h1 class="text-3xl font-extrabold text-rose-500 mb-2">BÁC SĨ LÂM SÀNG!</h1>
+        <p class="text-slate-600 dark:text-slate-300 text-sm mb-6">Chào mừng bạn đến với mô phỏng phòng khám hoạt hình trực quan. Hãy đăng ký thẻ bác sĩ để bắt đầu chẩn đoán!</p>
         
         <!-- Choose Avatar -->
         <div class="mb-6">
@@ -148,7 +151,7 @@
       <!-- HEADER WITH DOCTOR CARD AND SYSTEM TOGGLES -->
       <header class="flex flex-col lg:flex-row items-center justify-between gap-4 mb-8">
         
-        <!-- Doctor Info Badge -->
+        <!-- Doctor Info Badge with Real Levels -->
         <div class="cartoon-card bg-amber-100 dark:bg-slate-800 p-4 rounded-2xl w-full lg:w-auto flex items-center gap-4 relative overflow-hidden">
           <div class="text-4xl p-2 bg-white dark:bg-slate-700 rounded-xl cartoon-card">
             {{ doctor.avatar }}
@@ -159,16 +162,13 @@
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             </div>
             <div class="text-xl font-black text-slate-800 dark:text-slate-100">Bác sĩ: {{ doctor.name }}</div>
-            <!-- Progress / Level -->
-            <div class="flex items-center gap-2 mt-1">
-              <span class="bg-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">Cấp {{ doctor.level }}</span>
-              <div class="w-32 bg-slate-200 dark:bg-slate-600 h-3.5 rounded-full overflow-hidden border border-slate-700 relative">
-                <div class="bg-gradient-to-r from-emerald-400 to-indigo-500 h-full transition-all duration-300" :style="{ width: expProgress + '%' }"></div>
-                <div class="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-900 dark:text-white pointer-events-none">
-                  {{ doctor.exp % 100 }}/100 EXP
-                </div>
+            <!-- Progress / Level & Dynamic Rank Display -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
+              <span class="bg-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full self-start">{{ getDoctorTitle() }}</span>
+              <div class="flex items-center gap-1">
+                <span class="text-xs font-bold">🏆 {{ doctor.score }} Điểm</span>
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">({{ totalCasesCount }} ca đã làm)</span>
               </div>
-              <span class="text-xs font-bold">❤️ {{ doctor.score }} Điểm</span>
             </div>
           </div>
         </div>
@@ -176,24 +176,24 @@
         <!-- Navigation Buttons & Dark Mode Toggle -->
         <div class="flex flex-wrap items-center justify-center gap-2 w-full lg:w-auto">
           <!-- Main Clinic -->
-          <button @click="currentTab = 'clinic'" 
+          <button @click="switchTab('clinic')" 
                   class="cartoon-btn px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm"
                   :class="currentTab === 'clinic' ? 'bg-pink-400 text-slate-950' : 'bg-white dark:bg-slate-700'">
             🩺 Phòng Khám
           </button>
           
           <!-- Database Manager -->
-          <button @click="currentTab = 'database'" 
+          <button @click="switchTab('database')" 
                   class="cartoon-btn px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm"
                   :class="currentTab === 'database' ? 'bg-violet-400 text-slate-950' : 'bg-white dark:bg-slate-700'">
             📋 Quản Lý Bệnh Lý
           </button>
 
           <!-- History & Ranks -->
-          <button @click="currentTab = 'history'" 
+          <button @click="switchTab('history')" 
                   class="cartoon-btn px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm"
                   :class="currentTab === 'history' ? 'bg-sky-400 text-slate-950' : 'bg-white dark:bg-slate-700'">
-            🏆 Nhật Ký Khám
+            📊 Nhật Ký & Thống Kê
           </button>
 
           <!-- Theme Toggle Button -->
@@ -217,13 +217,25 @@
           
           <!-- Left: Patient Presentation Board (7 cols) -->
           <div class="lg:col-span-7 flex flex-col gap-6">
-            <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl relative overflow-hidden flex-1">
+            <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl relative overflow-hidden flex-1 flex flex-col">
               
               <!-- Patient Header Status -->
               <div class="flex items-center justify-between mb-4 pb-4 border-b-2 border-dashed border-slate-300 dark:border-slate-600">
-                <span class="bg-red-100 text-red-600 text-xs font-black px-3 py-1 rounded-full border border-red-300 animate-pulse">
-                  🚨 CA BỆNH KHẨN CẤP
-                </span>
+                <div class="flex items-center gap-2">
+                  <span v-if="emergencyMode" class="bg-red-500 text-white text-xs font-black px-3 py-1 rounded-full border border-red-700 animate-pulse flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation"></i> CẤP CỨU ĐANG BẬT
+                  </span>
+                  <span v-else class="bg-sky-100 text-sky-600 text-xs font-black px-3 py-1 rounded-full border border-sky-300">
+                    🏥 KHÁM THƯỜNG QUY
+                  </span>
+                </div>
+                
+                <!-- Countdown Timer for Emergency mode -->
+                <div v-if="emergencyMode" class="flex items-center gap-1.5 bg-rose-100 dark:bg-rose-950 px-3 py-1 rounded-xl border-2 border-rose-500">
+                  <i class="fa-solid fa-stopwatch text-rose-500 animate-spin"></i>
+                  <span class="font-black text-rose-600 dark:text-rose-400 text-sm">{{ formatCountdown }}</span>
+                </div>
+                
                 <span class="text-sm font-bold text-slate-500">Mã Số: #{{ activePatient.id }}</span>
               </div>
 
@@ -233,64 +245,53 @@
                 <!-- SVG Avatar Generator with Dynamic States -->
                 <div class="flex flex-col items-center">
                   <div class="w-32 h-32 rounded-full border-4 border-slate-800 bg-sky-100 dark:bg-sky-900 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <!-- Sick dynamic SVG face -->
                     <svg class="w-full h-full p-2" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <!-- Ears -->
                       <circle cx="12" cy="50" r="10" fill="#E2E8F0" stroke="#1E293B" stroke-width="4"/>
                       <circle cx="88" cy="50" r="10" fill="#E2E8F0" stroke="#1E293B" stroke-width="4"/>
-                      <!-- Face Base -->
                       <circle cx="50" cy="50" r="42" :fill="getFaceColor()" stroke="#1E293B" stroke-width="4"/>
                       
-                      <!-- Sick Blush / Fever cheeks -->
+                      <!-- Blush fever cheek indicators -->
                       <g v-if="activePatient.vitalSigns.temp >= 38.5">
                         <circle cx="30" cy="55" r="7" fill="#F43F5E" opacity="0.6" />
                         <circle cx="70" cy="55" r="7" fill="#F43F5E" opacity="0.6" />
                       </g>
                       
-                      <!-- Eyes -->
+                      <!-- Eye expression updates -->
                       <g v-if="diagnosticResult === 'wrong'">
-                        <!-- Crying or Dizzy Eyes -->
                         <path d="M25 40 L35 50 M35 40 L25 50" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
                         <path d="M65 40 L75 50 M75 40 L65 50" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
                       </g>
                       <g v-else-if="diagnosticResult === 'correct'">
-                        <!-- Happy Eyes -->
                         <path d="M22 48 Q30 38 38 48" stroke="#1E293B" stroke-width="4" fill="none" stroke-linecap="round"/>
                         <path d="M62 48 Q70 38 78 48" stroke="#1E293B" stroke-width="4" fill="none" stroke-linecap="round"/>
                       </g>
                       <g v-else>
-                        <!-- Dizzy/Sad Eyes -->
                         <path d="M25 45 Q30 38 35 45" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
                         <path d="M65 45 Q70 38 75 45" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
                         <circle cx="30" cy="48" r="2.5" fill="#1E293B"/>
                         <circle cx="70" cy="48" r="2.5" fill="#1E293B"/>
                       </g>
 
-                      <!-- Mouth / Expression -->
+                      <!-- Mouth expression updates -->
                       <g v-if="diagnosticResult === 'correct'">
-                        <!-- Happy Smile -->
                         <path d="M38 65 Q50 78 62 65" stroke="#1E293B" stroke-width="4" fill="none" stroke-linecap="round"/>
                       </g>
                       <g v-else-if="diagnosticResult === 'wrong'">
-                        <!-- Crying Mouth -->
                         <path d="M38 68 Q50 55 62 68" stroke="#1E293B" stroke-width="4" fill="none" stroke-linecap="round"/>
                       </g>
                       <g v-else>
-                        <!-- Sad / Squiggly line -->
                         <path d="M40 65 Q45 60 50 65 T60 65" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
-                        <!-- Fever Thermometer in Mouth -->
                         <line x1="50" y1="65" x2="25" y2="78" stroke="#64748B" stroke-width="5" stroke-linecap="round"/>
                         <circle cx="23" cy="79" r="3" fill="#EF4444"/>
                       </g>
                     </svg>
 
-                    <!-- Cute bandage on head or face -->
                     <div class="absolute top-2 left-6 bg-yellow-200 border-2 border-slate-800 text-[8px] font-black px-1 rounded rotate-[-12deg]">
                       🩹 ICE
                     </div>
                   </div>
 
-                  <!-- Patient Demographics Badge -->
+                  <!-- Patient basic info -->
                   <div class="mt-4 text-center">
                     <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-1">
                       <span>{{ activePatient.name }}</span>
@@ -303,57 +304,138 @@
                   </div>
                 </div>
 
-                <!-- Patient Clinical Presentation -->
-                <div class="flex-1 space-y-4">
-                  <!-- Vital signs badges -->
-                  <div class="grid grid-cols-2 gap-2">
-                    <div class="p-2.5 bg-rose-50 dark:bg-slate-700 rounded-xl border-2 border-slate-800 flex items-center gap-2">
-                      <span class="text-xl">🌡️</span>
-                      <div>
-                        <div class="text-[10px] text-slate-500 font-bold leading-tight">Thân Nhiệt</div>
-                        <div class="text-sm font-black" :class="activePatient.vitalSigns.temp >= 38.5 ? 'text-rose-500' : 'text-slate-700 dark:text-slate-200'">
-                          {{ activePatient.vitalSigns.temp }}°C
-                        </div>
-                      </div>
-                    </div>
-                    <div class="p-2.5 bg-indigo-50 dark:bg-slate-700 rounded-xl border-2 border-slate-800 flex items-center gap-2">
-                      <span class="text-xl">💓</span>
-                      <div>
-                        <div class="text-[10px] text-slate-500 font-bold leading-tight">Nhịp Tim</div>
-                        <div class="text-sm font-black text-indigo-500">
-                          {{ activePatient.vitalSigns.heartRate }} bpm
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Symptom Box -->
+                <!-- Patient Symptoms & Main Complaint -->
+                <div class="flex-1 space-y-4 w-full">
+                  <!-- Main Complaint -->
                   <div class="p-4 bg-amber-50 dark:bg-slate-700 rounded-2xl border-2 border-slate-800">
-                    <h4 class="text-sm font-black text-amber-700 dark:text-amber-300 flex items-center gap-1.5 mb-2">
-                      <span>🩺 Triệu Chứng Lâm Sàng:</span>
+                    <h4 class="text-sm font-black text-amber-700 dark:text-amber-300 flex items-center gap-1.5 mb-1">
+                      <span>💬 Lý do đến khám & Triệu chứng chính:</span>
                     </h4>
                     <p class="text-base font-bold italic text-slate-800 dark:text-slate-100">
                       "{{ activePatient.symptoms }}"
                     </p>
                   </div>
 
-                  <!-- Quick Hint Feature -->
-                  <div class="flex items-center gap-2">
-                    <button @click="revealHint" class="text-xs text-indigo-500 hover:text-indigo-600 font-bold flex items-center gap-1">
-                      <i class="fa-regular fa-lightbulb"></i>
-                      <span>Gợi ý chẩn đoán ({{ hintsUsed }} lần dùng)</span>
-                    </button>
-                    <span v-if="showHint" class="text-xs bg-amber-100 text-amber-800 font-semibold px-2 py-1 rounded">
-                      Gợi ý từ khóa: <strong>{{ activePatient.diagnosisHint }}</strong>
-                    </span>
+                  <div class="flex items-center justify-between">
+                    <!-- Quick Hint Feature -->
+                    <div class="flex items-center gap-2">
+                      <button @click="revealHint" class="text-xs text-indigo-500 hover:text-indigo-600 font-bold flex items-center gap-1">
+                        <i class="fa-regular fa-lightbulb"></i>
+                        <span>Xem gợi ý nhanh</span>
+                      </button>
+                      <span v-if="showHint" class="text-xs bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 font-semibold px-2 py-1 rounded">
+                        Từ khóa: <strong>{{ activePatient.diagnosisHint }}</strong>
+                      </span>
+                    </div>
+
+                    <!-- Clinical Mindscore indicator -->
+                    <div class="text-right">
+                      <span class="text-xs font-bold text-slate-500">Điểm tư duy: </span>
+                      <span class="text-sm font-black text-rose-500">{{ clinicalMindScore }} / 100</span>
+                    </div>
                   </div>
                 </div>
 
               </div>
 
-              <!-- Action Zone: Random Next Patient Button -->
-              <div class="mt-8 flex justify-center">
-                <button @click="nextPatient" class="cartoon-btn px-6 py-4 bg-rose-400 hover:bg-rose-500 text-slate-950 font-black text-lg rounded-2xl flex items-center gap-2 animate-pulse">
+              <!-- CLINICAL INTERACTION SEGMENTS -->
+              <div class="mt-6 border-t-2 border-slate-200 dark:border-slate-700 pt-4 space-y-4">
+                
+                <!-- Interaction buttons row -->
+                <div class="flex flex-wrap gap-2">
+                  <!-- Button 1: Ask further history -->
+                  <button @click="askHistory" 
+                          :disabled="diagnosticResult !== null"
+                          class="cartoon-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 bg-yellow-300 hover:bg-yellow-400 disabled:opacity-50 text-slate-900">
+                    🗣️ Hỏi bệnh thêm <span class="bg-yellow-100 text-[10px] px-1 rounded">-5đ</span>
+                  </button>
+
+                  <!-- Button 2: Clinical Examination -->
+                  <button @click="showClinicalExam = !showClinicalExam" 
+                          :disabled="diagnosticResult !== null"
+                          class="cartoon-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 bg-cyan-300 hover:bg-cyan-400 disabled:opacity-50 text-slate-900">
+                    🩺 Khám lâm sàng <span class="bg-cyan-100 text-[10px] px-1 rounded">-10đ</span>
+                  </button>
+
+                  <!-- Button 3: Lab Tests and Diagnostics -->
+                  <button @click="performLabTests" 
+                          :disabled="diagnosticResult !== null"
+                          class="cartoon-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 bg-purple-300 hover:bg-purple-400 disabled:opacity-50 text-slate-900">
+                    🧪 Chỉ định xét nghiệm <span class="bg-purple-100 text-[10px] px-1 rounded">-15đ</span>
+                  </button>
+                </div>
+
+                <!-- 1. ASK HISTORY LOGS -->
+                <div v-if="askedHistoryRecords.length > 0" class="p-3 bg-yellow-50 dark:bg-slate-700 rounded-xl border-2 border-amber-300">
+                  <h5 class="text-xs font-black text-amber-800 dark:text-amber-300 mb-2">📋 Khai Thác Bệnh Sử Bổ Sung:</h5>
+                  <ul class="text-xs font-bold text-slate-700 dark:text-slate-200 space-y-1">
+                    <li v-for="(item, idx) in askedHistoryRecords" :key="idx" class="flex items-start gap-1">
+                      <span class="text-amber-500">&bull;</span>
+                      <div><strong>{{ item.label }}:</strong> {{ item.value }}</div>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- 2. CLINICAL EXAMINATION RESULTS -->
+                <div v-if="showClinicalExam" class="p-4 bg-cyan-50 dark:bg-slate-700 rounded-xl border-2 border-cyan-300">
+                  <h5 class="text-xs font-black text-cyan-800 dark:text-cyan-300 mb-2">🩺 Kết Quả Khám Thực Thể Tại Giường:</h5>
+                  <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center mb-3">
+                    <div class="bg-white dark:bg-slate-800 p-1.5 rounded-lg border border-cyan-200">
+                      <div class="text-[9px] text-slate-400 font-bold">Mạch</div>
+                      <div class="text-xs font-black text-slate-800 dark:text-white">{{ activePatient.clinicalExam.pulse }} bpm</div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-1.5 rounded-lg border border-cyan-200">
+                      <div class="text-[9px] text-slate-400 font-bold">Huyết Áp</div>
+                      <div class="text-xs font-black text-slate-800 dark:text-white">{{ activePatient.clinicalExam.bloodPressure }} mmHg</div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-1.5 rounded-lg border border-cyan-200">
+                      <div class="text-[9px] text-slate-400 font-bold">Nhiệt Độ</div>
+                      <div class="text-xs font-black text-rose-500">{{ activePatient.vitalSigns.temp }}°C</div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-1.5 rounded-lg border border-cyan-200">
+                      <div class="text-[9px] text-slate-400 font-bold">Nhịp Thở</div>
+                      <div class="text-xs font-black text-slate-800 dark:text-white">{{ activePatient.clinicalExam.respiratoryRate }} l/p</div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-1.5 rounded-lg border border-cyan-200">
+                      <div class="text-[9px] text-slate-400 font-bold">SpO₂</div>
+                      <div class="text-xs font-black text-emerald-500">{{ activePatient.clinicalExam.spo2 }}%</div>
+                    </div>
+                  </div>
+                  <div class="text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 p-2 rounded-lg border border-cyan-200">
+                    <strong>Dấu hiệu thực thể nổi bật:</strong> {{ activePatient.clinicalExam.physicalSigns }}
+                  </div>
+                </div>
+
+                <!-- 3. LAB TESTS / DIAGNOSTICS RESULTS -->
+                <div v-if="askedLabTests" class="p-3 bg-purple-50 dark:bg-slate-700 rounded-xl border-2 border-purple-300">
+                  <h5 class="text-xs font-black text-purple-800 dark:text-purple-300 mb-2">🧪 Kết Quả Các Chỉ Định Xét Nghiệm Cận Lâm Sàng:</h5>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-bold text-slate-700 dark:text-slate-200">
+                    <div class="bg-white dark:bg-slate-800 p-2 rounded-lg border border-purple-200">
+                      <div class="text-purple-700 font-black mb-1">🩸 Xét nghiệm máu &amp; Sinh hoá:</div>
+                      <div>&bull; Công thức máu: {{ activePatient.labResults.cbc }}</div>
+                      <div>&bull; Sinh hóa máu: {{ activePatient.labResults.chemistry }}</div>
+                      <div>&bull; Điện giải đồ: {{ activePatient.labResults.electrolytes }}</div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-2 rounded-lg border border-purple-200">
+                      <div class="text-purple-700 font-black mb-1">🖼️ Chẩn đoán hình ảnh &amp; Điện tâm đồ:</div>
+                      <div>&bull; X-quang ngực / Khác: {{ activePatient.labResults.xray }}</div>
+                      <div>&bull; Điện tâm đồ (ECG): {{ activePatient.labResults.ecg }}</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Next Patient Action Area -->
+              <div class="mt-auto pt-6 flex justify-between items-center gap-4">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-400">Emergency:</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" v-model="emergencyMode" class="sr-only peer" @change="toggleEmergencyMode">
+                    <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                  </label>
+                </div>
+                <button @click="nextPatient" class="cartoon-btn px-6 py-3 bg-rose-400 hover:bg-rose-500 text-slate-950 font-black text-sm sm:text-base rounded-2xl flex items-center gap-2">
                   <span>Khám Bệnh Nhân Tiếp Theo</span> 🧑‍⚕️✨
                 </button>
               </div>
@@ -365,19 +447,19 @@
           <div class="lg:col-span-5 flex flex-col gap-6">
             
             <!-- Diagnosis Input and Submit Card -->
-            <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl flex-1">
-              <h2 class="text-2xl font-black mb-4 flex items-center gap-2 text-rose-500">
+            <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl flex-1 flex flex-col">
+              <h2 class="text-2xl font-black mb-2 flex items-center gap-2 text-rose-500">
                 📝 Chẩn Đoán Của Bạn
               </h2>
 
-              <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Hãy nhập chẩn đoán cho ca bệnh bên cạnh. Bạn có thể chọn từ gợi ý hoặc tự nhập tên bệnh chuẩn xác nhất.
+              <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                Hãy nhập chẩn đoán cho ca bệnh bên cạnh. Bạn có thể chọn từ danh sách gợi ý hoặc tự nhập tên bệnh chuẩn xác nhất.
               </p>
 
               <!-- Diagnostic input space -->
               <div class="space-y-4 relative">
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nhập tên bệnh lý:</label>
+                  <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nhập tên bệnh lý:</label>
                   <input type="text" v-model="studentDiagnosis" @input="showSuggestions = true"
                          placeholder="Ví dụ: Đau mắt đỏ, Cảm cúm..." 
                          class="w-full px-4 py-3 input-cartoon bg-slate-50 dark:bg-slate-700 text-base font-bold"
@@ -388,7 +470,7 @@
                        class="absolute z-10 w-full bg-white dark:bg-slate-800 border-2 border-slate-800 rounded-xl mt-1 max-h-40 overflow-y-auto shadow-lg">
                     <div v-for="diag in filteredDiagnoses" :key="diag" 
                          @click="selectDiagnosis(diag)"
-                         class="p-2 hover:bg-rose-100 dark:hover:bg-slate-700 cursor-pointer font-semibold text-sm">
+                         class="p-2 hover:bg-rose-100 dark:hover:bg-slate-700 cursor-pointer font-semibold text-sm text-slate-800 dark:text-slate-100">
                       ✨ {{ diag }}
                     </div>
                   </div>
@@ -398,48 +480,53 @@
                 <div class="flex gap-2">
                   <button @click="submitDiagnosis" 
                           :disabled="!studentDiagnosis || diagnosticResult !== null"
-                          class="cartoon-btn flex-1 py-3 bg-emerald-400 hover:bg-emerald-500 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-extrabold text-base rounded-2xl">
+                          class="cartoon-btn flex-1 py-3 bg-emerald-400 hover:bg-emerald-500 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-extrabold text-sm sm:text-base rounded-2xl">
                     🔥 Nộp Đáp Án & Chấm Điểm
                   </button>
                 </div>
               </div>
 
-              <!-- Grading feedback result (Vui vẻ, sinh động) -->
+              <!-- Diagnostic feedback result with clinical reasoning details -->
               <div v-if="diagnosticResult" class="mt-6 p-4 rounded-2xl border-4 transition-all"
-                   :class="diagnosticResult === 'correct' ? 'bg-emerald-100 border-emerald-500 text-emerald-950' : 'bg-red-100 border-red-500 text-red-950'">
-                <div class="flex items-center gap-3 mb-2">
+                   :class="diagnosticResult === 'correct' ? 'bg-emerald-100 dark:bg-emerald-950 border-emerald-500 text-emerald-950 dark:text-emerald-100' : 'bg-red-100 dark:bg-rose-950 border-red-500 text-red-950 dark:text-red-100'">
+                <div class="flex items-center gap-3 mb-3">
                   <span class="text-3xl" v-if="diagnosticResult === 'correct'">🎉</span>
                   <span class="text-3xl" v-else>😢</span>
                   <div>
-                    <h3 class="font-extrabold text-lg">
+                    <h3 class="font-extrabold text-base sm:text-lg">
                       {{ diagnosticResult === 'correct' ? 'CHẨN ĐOÁN HOÀN HẢO!' : 'CHƯA CHÍNH XÁC RỒI!' }}
                     </h3>
-                    <p class="text-xs font-bold opacity-80" v-if="diagnosticResult === 'correct'">+20 EXP &amp; Thêm điểm danh tiếng</p>
-                    <p class="text-xs font-bold opacity-80" v-else>Hãy thử lại hoặc học thêm kiến thức nhé!</p>
+                    <p class="text-xs font-bold opacity-80">
+                      Điểm lâm sàng đạt được: <span class="underline text-indigo-600 font-extrabold">{{ finalEarnedScore }} điểm</span>
+                    </p>
                   </div>
                 </div>
                 
-                <div class="text-sm font-bold space-y-1">
-                  <div>👨‍⚕️ Đáp án chính xác: <span class="underline text-indigo-600">{{ activePatient.correctDiagnosis }}</span></div>
-                  <div class="mt-2 text-xs italic bg-white dark:bg-slate-900 bg-opacity-70 p-2 rounded-lg">
-                    💡 <strong>Mẹo lâm sàng:</strong> {{ activePatient.treatmentPlan || 'Hãy luôn khám kỹ lâm sàng.' }}
+                <!-- Expanded Medical Explanation -->
+                <div class="text-xs font-bold space-y-2 border-t border-slate-300 dark:border-slate-700 pt-2.5">
+                  <div>👨‍⚕️ <strong>Đáp án chính xác:</strong> <span class="underline text-indigo-600 dark:text-indigo-400">{{ activePatient.correctDiagnosis }}</span></div>
+                  <div>🩺 <strong>Dấu hiệu gợi ý cốt lõi:</strong> {{ activePatient.diagnosisHint }}</div>
+                  <div>⚡ <strong>Lý do chọn chẩn đoán:</strong> {{ activePatient.explanation.reason }}</div>
+                  <div>🔬 <strong>Chẩn đoán phân biệt:</strong> {{ activePatient.explanation.differential }}</div>
+                  <div class="p-2 bg-white dark:bg-slate-900 bg-opacity-70 rounded-lg">
+                    💡 <strong>Hướng xử trí ban đầu:</strong> {{ activePatient.explanation.treatment }}
                   </div>
                 </div>
               </div>
 
             </div>
 
-            <!-- Fun facts / Dr. Profile Snapshot -->
+            <!-- Stats dashboard card -->
             <div class="cartoon-card bg-emerald-100 dark:bg-slate-800 p-4 rounded-3xl">
-              <h3 class="text-sm font-black text-emerald-800 dark:text-emerald-300 mb-2">📊 KẾT QUẢ CỦA PHÒNG KHÁM:</h3>
+              <h3 class="text-xs font-black text-emerald-800 dark:text-emerald-300 mb-2">📊 KẾT QUẢ CỦA PHÒNG KHÁM:</h3>
               <div class="grid grid-cols-3 gap-2 text-center">
                 <div class="bg-white dark:bg-slate-700 p-2 rounded-xl border border-slate-700">
                   <div class="text-lg font-black text-emerald-500">{{ stats.treated }}</div>
-                  <div class="text-[9px] font-bold text-slate-500 uppercase">Bệnh nhân</div>
+                  <div class="text-[9px] font-bold text-slate-500 uppercase">Đã khám</div>
                 </div>
                 <div class="bg-white dark:bg-slate-700 p-2 rounded-xl border border-slate-700">
                   <div class="text-lg font-black text-indigo-500">{{ stats.correct }}</div>
-                  <div class="text-[9px] font-bold text-slate-500 uppercase">Thành công</div>
+                  <div class="text-[9px] font-bold text-slate-500 uppercase">Chuẩn xác</div>
                 </div>
                 <div class="bg-white dark:bg-slate-700 p-2 rounded-xl border border-slate-700">
                   <div class="text-lg font-black text-rose-500">{{ stats.successRate }}%</div>
@@ -452,12 +539,12 @@
 
         </section>
 
-        <!-- ================= SECTION 2: TEMPLATE MANAGER (THÊM, SỬA, XOÁ BỆNH LÝ) ================= -->
+        <!-- ================= SECTION 2: DATABASE TAB (ADD/EDIT/DELETE CASES) ================= -->
         <section v-if="currentTab === 'database'" class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl">
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b-2 border-dashed border-slate-200 dark:border-slate-700">
             <div>
               <h2 class="text-2xl font-black text-violet-500">📋 Quản Lý Danh Mục Bệnh Lý</h2>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Nơi bạn có thể Thêm, Sửa hoặc Xoá các kịch bản bệnh nhân ngẫu nhiên xuất hiện trong phòng khám.</p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Nơi bạn có thể Thêm, Sửa hoặc Xoá các kịch bản bệnh án mẫu xuất hiện trong phòng khám.</p>
             </div>
             
             <button @click="openModal('add')" class="cartoon-btn px-4 py-2 bg-emerald-400 hover:bg-emerald-500 text-slate-950 font-bold text-sm rounded-xl flex items-center gap-1.5 self-stretch sm:self-auto text-center justify-center">
@@ -468,13 +555,14 @@
 
           <!-- Table/List of Symptoms & Diagnoses -->
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse min-w-[600px]">
+            <table class="w-full text-left border-collapse min-w-[700px]">
               <thead>
                 <tr class="bg-violet-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black uppercase">
                   <th class="p-3 rounded-l-xl">Tên Bệnh</th>
-                  <th class="p-3">Triệu chứng lâm sàng tiêu biểu</th>
-                  <th class="p-3">Từ khóa gợi ý</th>
-                  <th class="p-3">Ghi chú & Phác đồ điều trị</th>
+                  <th class="p-3">Triệu chứng lâm sàng chính</th>
+                  <th class="p-3">Gợi ý</th>
+                  <th class="p-3">Huyết áp / Thể chất</th>
+                  <th class="p-3">Phân biệt & Điều trị</th>
                   <th class="p-3 text-center rounded-r-xl w-28">Thao tác</th>
                 </tr>
               </thead>
@@ -483,6 +571,7 @@
                   <td class="p-3 font-bold text-indigo-600 dark:text-indigo-400">{{ item.correctDiagnosis }}</td>
                   <td class="p-3 text-slate-600 dark:text-slate-300 truncate max-w-xs">{{ item.symptoms }}</td>
                   <td class="p-3"><span class="bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 rounded text-xs text-amber-700">{{ item.diagnosisHint }}</span></td>
+                  <td class="p-3 text-xs text-slate-500">{{ item.physicalSigns || 'Ran nổ / Bình thường' }}</td>
                   <td class="p-3 text-slate-500 dark:text-slate-400 truncate max-w-xs">{{ item.treatmentPlan || 'N/A' }}</td>
                   <td class="p-3">
                     <div class="flex items-center justify-center gap-1">
@@ -507,67 +596,110 @@
 
         </section>
 
-        <!-- ================= SECTION 3: HISTORY & STATS TAB ================= -->
-        <section v-if="currentTab === 'history'" class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl">
-          <div class="flex items-center justify-between pb-4 mb-4 border-b-2 border-dashed border-slate-200 dark:border-slate-700">
-            <div>
-              <h2 class="text-2xl font-black text-sky-500">🏆 Nhật Ký Khám Bệnh & Thành Tích</h2>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Danh sách các ca lâm sàng bạn đã từng thăm khám thực tế tại bệnh viện.</p>
+        <!-- ================= SECTION 3: HISTORY & ADVANCED ANALYTICAL DASHBOARD ================= -->
+        <section v-if="currentTab === 'history'" class="grid grid-cols-1 gap-6">
+          
+          <!-- History Dashboard Cards -->
+          <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b-2 border-dashed border-slate-200 dark:border-slate-700 gap-2">
+              <div>
+                <h2 class="text-2xl font-black text-sky-500">🏆 Thành Tích & Cấp Bậc Y Khoa</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Theo dõi tiến trình rèn luyện lâm sàng và biểu đồ phân tích năng lực.</p>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-bold text-slate-400">Danh hiệu của bạn:</span>
+                <div class="text-base font-black text-sky-600 dark:text-sky-400">{{ getDoctorTitle() }}</div>
+              </div>
             </div>
-            <button @click="clearHistory" class="text-xs text-rose-500 hover:underline font-bold">Xoá toàn bộ nhật ký</button>
-          </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="p-4 rounded-2xl bg-teal-50 dark:bg-slate-700/50 border-2 border-slate-800 flex items-center gap-3">
-              <span class="text-3xl">🎖️</span>
-              <div>
-                <div class="text-xs font-bold text-slate-500">Danh Hiệu Bác Sĩ</div>
-                <div class="text-lg font-black text-teal-600 dark:text-teal-400">{{ getDoctorTitle() }}</div>
+            <!-- Dynamic stats calculations -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              <div class="p-3 rounded-2xl bg-teal-50 dark:bg-slate-700/50 border-2 border-slate-800 text-center">
+                <span class="text-2xl">🩺</span>
+                <div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Tổng Số Ca</div>
+                <div class="text-lg font-black text-teal-600 dark:text-teal-400">{{ totalCasesCount }} ca</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-indigo-50 dark:bg-slate-700/50 border-2 border-slate-800 text-center">
+                <span class="text-2xl">🎯</span>
+                <div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Chuẩn Xác</div>
+                <div class="text-lg font-black text-indigo-600 dark:text-indigo-400">{{ correctCasesCount }} ca</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-rose-50 dark:bg-slate-700/50 border-2 border-slate-800 text-center">
+                <span class="text-2xl">🔥</span>
+                <div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Chuỗi Đúng Lên Tiếp</div>
+                <div class="text-lg font-black text-rose-600 dark:text-rose-400">{{ longestStreak }} ca</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-amber-50 dark:bg-slate-700/50 border-2 border-slate-800 text-center">
+                <span class="text-2xl">📈</span>
+                <div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Điểm Cao Nhất</div>
+                <div class="text-lg font-black text-amber-600 dark:text-amber-400">{{ maxScore }}đ</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-purple-50 dark:bg-slate-700/50 border-2 border-slate-800 text-center col-span-2 md:col-span-1">
+                <span class="text-2xl">📊</span>
+                <div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Điểm Trung Bình</div>
+                <div class="text-lg font-black text-purple-600 dark:text-purple-400">{{ averageScore }}đ</div>
               </div>
             </div>
-            <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-slate-700/50 border-2 border-slate-800 flex items-center gap-3">
-              <span class="text-3xl">🔥</span>
-              <div>
-                <div class="text-xs font-bold text-slate-500">Kỷ Lục Chẩn Đoán Đúng</div>
-                <div class="text-lg font-black text-indigo-600 dark:text-indigo-400">{{ stats.correct }} / {{ stats.treated }} Ca</div>
-              </div>
-            </div>
-            <div class="p-4 rounded-2xl bg-rose-50 dark:bg-slate-700/50 border-2 border-slate-800 flex items-center gap-3">
-              <span class="text-3xl">💡</span>
-              <div>
-                <div class="text-xs font-bold text-slate-500">Trợ Giúp Đã Sử Dụng</div>
-                <div class="text-lg font-black text-rose-600 dark:text-rose-400">{{ hintsUsed }} lần gợi ý</div>
-              </div>
-            </div>
-          </div>
 
-          <!-- List of history events -->
-          <div class="space-y-3">
-            <div v-for="log in sortedHistory" :key="log.time" class="p-4 rounded-2xl border-2 border-slate-800 bg-slate-50 dark:bg-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <span class="text-2xl" v-if="log.success">💚</span>
-                <span class="text-2xl" v-else>💔</span>
-                <div>
-                  <div class="font-extrabold text-sm sm:text-base">Bệnh nhân: {{ log.patientName }} ({{ log.patientAge }}t)</div>
-                  <div class="text-xs text-slate-500">
-                    Bệnh chuẩn: <span class="text-emerald-500 font-bold">{{ log.correctDiagnosis }}</span> &bull; 
-                    Nhập chẩn đoán: <span class="font-bold" :class="log.success ? 'text-emerald-500' : 'text-rose-500'">"{{ log.studentInput }}"</span>
-                  </div>
+            <!-- Chart.js Graphics Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <!-- Chart 1: Scores Over Time & Progress -->
+              <div class="p-4 rounded-2xl border-2 border-slate-800 bg-slate-50 dark:bg-slate-700">
+                <h4 class="text-xs font-black text-slate-600 dark:text-slate-300 uppercase mb-3 text-center">📈 Điểm Số &amp; Tiến Bộ Lâm Sàng Qua Các Ca</h4>
+                <div class="h-64 relative">
+                  <canvas id="scoreHistoryChart"></canvas>
                 </div>
               </div>
-              <div class="text-right self-end sm:self-auto">
-                <span class="text-xs font-bold text-slate-400 block">{{ formatTime(log.time) }}</span>
-                <span class="inline-block mt-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full"
-                      :class="log.success ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
-                  {{ log.success ? '+20 EXP' : '0 EXP' }}
-                </span>
+
+              <!-- Chart 2: Specialty / Categories & Diagnosis Ratio -->
+              <div class="p-4 rounded-2xl border-2 border-slate-800 bg-slate-50 dark:bg-slate-700 flex flex-col justify-between">
+                <h4 class="text-xs font-black text-slate-600 dark:text-slate-300 uppercase mb-3 text-center">🍰 Tỉ Lệ Chẩn Đoán &amp; Chuyên Khoa Thực Hành</h4>
+                <div class="h-64 relative">
+                  <canvas id="specialtyChart"></canvas>
+                </div>
               </div>
             </div>
 
-            <!-- Empty history -->
-            <div v-if="!history.length" class="text-center py-10">
-              <span class="text-4xl block mb-2">📭</span>
-              <p class="text-slate-500 font-bold">Chưa khám ca bệnh nào cả. Hãy sang Phòng Khám để đón bệnh nhân đầu tiên!</p>
+          </div>
+
+          <!-- PRACTICE RECORDS TAB (📚 Hồ sơ đã thực hành) -->
+          <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b-2 border-dashed border-slate-200 dark:border-slate-700">
+              <h3 class="text-lg font-black text-violet-500 flex items-center gap-2">
+                <span>📚 Hồ Sơ Đã Thực Hành (Lưu trữ cục bộ)</span>
+              </h3>
+              <button @click="clearHistory" class="text-xs text-rose-500 hover:underline font-bold">Xoá sạch hồ sơ</button>
+            </div>
+
+            <div class="space-y-3">
+              <div v-for="log in sortedHistory" :key="log.time" class="p-4 rounded-2xl border-2 border-slate-800 bg-slate-50 dark:bg-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl" v-if="log.success">💚</span>
+                  <span class="text-2xl" v-else>💔</span>
+                  <div>
+                    <div class="font-extrabold text-sm sm:text-base flex items-center gap-2">
+                      <span>Ca lâm sàng: {{ log.patientName }} ({{ log.patientAge }} tuổi)</span>
+                      <span v-if="log.isEmergency" class="bg-red-500 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase">Cấp Cứu 🚨</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-1">
+                      Bệnh lý chuẩn xác: <span class="text-emerald-500 font-bold">{{ log.correctDiagnosis }}</span> &bull; 
+                      Chẩn đoán đã nhập: <span class="font-bold" :class="log.success ? 'text-emerald-500' : 'text-rose-500'">"{{ log.studentInput }}"</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-right self-end sm:self-auto flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0">
+                  <span class="text-xs font-bold text-slate-400 block">{{ formatTime(log.time) }}</span>
+                  <span class="inline-block mt-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full"
+                        :class="log.success ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+                    Đạt được: {{ log.earnedScore }} điểm
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="!history.length" class="text-center py-10">
+                <span class="text-4xl block mb-2">📭</span>
+                <p class="text-slate-500 font-bold">Chưa khám ca bệnh nào cả. Hãy sang Phòng Khám để đón bệnh nhân đầu tiên!</p>
+              </div>
             </div>
           </div>
 
@@ -585,31 +717,31 @@
 
     <!-- ================= ADD / EDIT MEDICAL CASE MODAL ================= -->
     <div v-if="modal.show" class="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl max-w-lg w-full relative animate-in fade-in zoom-in duration-200">
+      <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl max-w-lg w-full relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
         <h3 class="text-xl font-black mb-4 flex items-center gap-2 text-violet-500">
           <span>{{ modal.mode === 'add' ? '✨ Tạo Mới Ca Bệnh' : '✍️ Chỉnh Sửa Ca Bệnh' }}</span>
         </h3>
 
-        <!-- Form fields -->
-        <div class="space-y-4">
+        <!-- Form fields with complete medical diagnostic parameters -->
+        <div class="space-y-4 text-xs sm:text-sm">
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Chẩn Đoán Đúng (Tên bệnh chính xác):</label>
-            <input type="text" v-model="modal.form.correctDiagnosis" placeholder="Ví dụ: Đau mắt đỏ" class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold">
+            <label class="block font-bold text-slate-500 mb-1">Chẩn Đoán Đúng (Tên bệnh chính xác):</label>
+            <input type="text" v-model="modal.form.correctDiagnosis" placeholder="Ví dụ: Đau mắt đỏ" class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700">
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Triệu Chứng Mô Tả:</label>
-            <textarea v-model="modal.form.symptoms" rows="3" placeholder="Mắt đỏ hoe, nhiều ghèn nhầy, ngứa rát kinh khủng..." class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold"></textarea>
+            <label class="block font-bold text-slate-500 mb-1">Triệu Chứng Mô Tả Lâm Sàng:</label>
+            <textarea v-model="modal.form.symptoms" rows="2" placeholder="Bệnh sử khởi phát, mô tả sơ bộ..." class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700"></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-500 mb-1">Từ Khoá Gợi Ý (Dễ đoán):</label>
-              <input type="text" v-model="modal.form.diagnosisHint" placeholder="Ví dụ: Đau mắt" class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold">
+              <label class="block font-bold text-slate-500 mb-1">Từ Khoá Gợi Ý (Dễ đoán):</label>
+              <input type="text" v-model="modal.form.diagnosisHint" placeholder="Ví dụ: Đau mắt" class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700">
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-500 mb-1">Lứa tuổi thường gặp:</label>
-              <select v-model="modal.form.ageGroup" class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold">
+              <label class="block font-bold text-slate-500 mb-1">Lứa tuổi thường gặp:</label>
+              <select v-model="modal.form.ageGroup" class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700">
                 <option value="Trẻ em">Trẻ em (1-10 tuổi)</option>
                 <option value="Thanh niên">Thanh niên (15-30 tuổi)</option>
                 <option value="Người lớn">Người lớn (30+ tuổi)</option>
@@ -617,9 +749,38 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Lời khuyên / Phác Đồ Điều Trị (Mẹo lâm sàng):</label>
-            <input type="text" v-model="modal.form.treatmentPlan" placeholder="Ví dụ: Nhỏ nước muối sinh lý, tránh chạm tay bẩn..." class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold">
+          <!-- Clinical exam fields -->
+          <div class="border-t border-slate-200 dark:border-slate-700 pt-3">
+            <h4 class="font-black text-rose-500 mb-2">🫁 Kết Quả Khám Lâm Sàng:</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-500 mb-1">Dấu hiệu thực thể:</label>
+                <input type="text" v-model="modal.form.physicalSigns" placeholder="Ví dụ: Ran nổ đáy phổi phải" class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-500 mb-1">Mạch / Huyết Áp trung bình:</label>
+                <input type="text" v-model="modal.form.customBp" placeholder="Ví dụ: 120/80 mmHg" class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700">
+              </div>
+            </div>
+          </div>
+
+          <!-- Explanation Details -->
+          <div class="border-t border-slate-200 dark:border-slate-700 pt-3">
+            <h4 class="font-black text-indigo-500 mb-2">📖 Giải thích &amp; Lý do Y khoa:</h4>
+            <div class="space-y-3">
+              <div>
+                <label class="block font-bold text-slate-500 mb-1">Cơ chế / Lý do chẩn đoán:</label>
+                <input type="text" v-model="modal.form.medReason" placeholder="Triệu chứng và các cận lâm sàng chỉ điểm rõ ràng..." class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-500 mb-1">Chẩn đoán phân biệt chính:</label>
+                <input type="text" v-model="modal.form.medDiff" placeholder="Cần phân biệt với bệnh gì?" class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-500 mb-1">Phác đồ xử trí đầu tay:</label>
+                <input type="text" v-model="modal.form.treatmentPlan" placeholder="Kê thuốc, chế độ sinh hoạt..." class="w-full px-3 py-2 input-cartoon font-bold bg-slate-50 dark:bg-slate-700">
+              </div>
+            </div>
           </div>
         </div>
 
@@ -639,7 +800,7 @@
       <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl max-w-sm w-full text-center">
         <span class="text-4xl block mb-2">⚠️</span>
         <h3 class="text-lg font-black text-rose-500 mb-2">Đồng Ý Đặt Lại Trực Tuyến?</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-300 mb-6">Mọi tiến độ, dữ liệu bệnh án tự tạo và thẻ bác sĩ của bạn sẽ bị xoá vĩnh viễn.</p>
+        <p class="text-xs text-slate-500 dark:text-slate-300 mb-6">Mọi tiến độ, dữ liệu bệnh án tự tạo và thẻ bác sĩ của bạn sẽ bị xoá vĩnh viễn khỏi LocalStorage.</p>
         
         <div class="flex gap-2">
           <button @click="showResetConfirm = false" class="cartoon-btn flex-1 py-2 bg-slate-200 dark:bg-slate-700 font-bold text-sm rounded-xl">Hủy</button>
@@ -651,17 +812,21 @@
   </div>
 
   <script>
-    const { createApp, ref, computed, onMounted, watch } = Vue;
+    const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
 
-    // Default template cases for clinical matching (100% Vietnamese content)
-    const DEFAULT_CASES = [
+    // Advanced Clinical templates incorporating clinical parameters, lab results, and y-medical explanations
+    const DEFAULT_CLINICAL_CASES = [
       {
         id: '1',
         correctDiagnosis: 'Cảm cúm siêu cấp',
         symptoms: 'Thường xuyên nhảy mũi hắt xì văng cả cầu vồng, thân nhiệt nóng như núi lửa, hay chảy nước mũi và mỏi mệt cơ thể.',
         diagnosisHint: 'Cúm',
         ageGroup: 'Trẻ em',
-        treatmentPlan: 'Nên uống nhiều nước ấm, nghỉ ngơi tại giường ngủ và cách ly với thú cưng để tránh lây bệnh.'
+        physicalSigns: 'Niêm mạc họng đỏ nhẹ, không rale phổi',
+        customBp: '100/60 mmHg',
+        medReason: 'Triệu chứng hô hấp trên rầm rộ kèm sốt nhẹ cấp tính, phù hợp dịch tễ học lây lan hô hấp.',
+        medDiff: 'Covid-19 (cần xét nghiệm PCR), Viêm mũi dị ứng (không kèm sốt).',
+        treatmentPlan: 'Nên uống nhiều nước ấm, nghỉ ngơi tại giường ngủ, súc họng nước muối ấm.'
       },
       {
         id: '2',
@@ -669,7 +834,11 @@
         symptoms: 'Chân tay run rẩy nếu không có trân châu, tinh thần lờ đờ uể oải suốt cả ngày, tỉnh bừng mắt khi nghe tiếng hút rột rột.',
         diagnosisHint: 'Trà sữa',
         ageGroup: 'Thanh niên',
-        treatmentPlan: 'Kê đơn giảm liều ngọt dần, uống trà mộc để giải độc bớt cơn cuồng đường.'
+        physicalSigns: 'Đồng tử giãn nhẹ khi ngửi thấy mùi sữa bột thơm, bụng gõ vang trống.',
+        customBp: '115/75 mmHg',
+        medReason: 'Thiếu hụt endorphin tự nhiên có trong trà đen và trân châu đường đen lâu ngày.',
+        medDiff: 'Hạ đường huyết thực sự (cần test nhanh đường máu mao mạch).',
+        treatmentPlan: 'Kê đơn uống 1 ly trà sữa giảm 50% đường mỗi tuần, thay thế dần bằng trà mộc giải độc.'
       },
       {
         id: '3',
@@ -677,7 +846,11 @@
         symptoms: 'Đau nhức dữ dội ở hố chậu bụng dưới bên phải, sốt nhẹ, dáng đi lom khom đau râm ran tăng tiến cực độ.',
         diagnosisHint: 'Ruột thừa',
         ageGroup: 'Thanh niên',
-        treatmentPlan: 'Đây là tình trạng cấp cứu ngoại khoa! Vui lòng chuyển bệnh nhân ngay đến bệnh viện mổ cắt ruột thừa khẩn cấp.'
+        physicalSigns: 'Phản ứng thành bụng hố chậu phải dương tính, điểm McBurney đau nhói.',
+        customBp: '120/80 mmHg',
+        medReason: 'Đau khu trú vùng hố chậu phải sau khởi phát đau quanh rốn, kèm phản ứng thành bụng rõ rệt.',
+        medDiff: 'U nang buồng trứng xoắn, Viêm đại tràng co thắt.',
+        treatmentPlan: 'Tình trạng cấp cứu ngoại khoa khẩn cấp! Nhập viện mổ nội soi cắt ruột thừa.'
       },
       {
         id: '4',
@@ -685,7 +858,11 @@
         symptoms: 'Ngủ ngày cày đêm, thức trắng tới 3 giờ sáng không chợp mắt, xung quanh bọng mắt có vòng quầng thâm xám đen.',
         diagnosisHint: 'Mất ngủ',
         ageGroup: 'Thanh niên',
-        treatmentPlan: 'Tránh sử dụng điện thoại trước giờ ngủ 1 tiếng, uống 1 cốc sữa ấm để dễ đi sâu vào giấc ngủ lành mạnh.'
+        physicalSigns: 'Mắt đỏ nhẹ, quầng thâm thẫm màu hai bên hốc mắt, giảm tập trung.',
+        customBp: '110/70 mmHg',
+        medReason: 'Rối loạn chu kỳ sinh học ngày đêm do lạm dụng thiết bị điện tử có ánh sáng xanh.',
+        medDiff: 'Suy tuyến giáp (gây mệt mỏi kéo dài), Thiếu máu mạn tính.',
+        treatmentPlan: 'Hạn chế màn hình xanh trước ngủ 1 giờ, bổ sung trà tim sen hoặc sữa ấm.'
       },
       {
         id: '5',
@@ -693,7 +870,11 @@
         symptoms: 'Lòng trắng mắt xung huyết đỏ au như quả cà chua chín, nhiều dỉ mắt nhầy dính rát ngứa ngáy khó chịu.',
         diagnosisHint: 'Mắt đỏ',
         ageGroup: 'Trẻ em',
-        treatmentPlan: 'Dùng riêng khăn mặt, nhỏ dung dịch nước muối sinh lý thường xuyên để sát khuẩn nhẹ dịu.'
+        physicalSigns: 'Kết mạc mắt đỏ rực, phù nề nhẹ nếp gấp, nhiều tiết tố nhầy.',
+        customBp: '105/65 mmHg',
+        medReason: 'Xung huyết toàn bộ kết mạc nhãn cầu và kết mạc mi mắt do Adenovirus.',
+        medDiff: 'Viêm màng bồ đào, Viêm loét giác mạc do dị vật.',
+        treatmentPlan: 'Dùng nước muối sinh lý NaCl 0.9% rửa mắt, tránh dùng chung khăn mặt.'
       },
       {
         id: '6',
@@ -701,42 +882,34 @@
         symptoms: 'Vừa đi học ngoài nắng nóng cực độ về, chóng mặt xây xẩm mặt mày, da nóng ran đỏ bừng, mệt mỏi rã rời cơ thể.',
         diagnosisHint: 'Say nắng',
         ageGroup: 'Trẻ em',
-        treatmentPlan: 'Uống dung dịch oresol, nới lỏng trang phục và hạ mát cơ thể ở chỗ thoáng gió.'
+        physicalSigns: 'Da khô nóng rát, vã mồ hôi nhiều, niêm mạc nhạt.',
+        customBp: '90/60 mmHg',
+        medReason: 'Mất nước và điện giải cấp tính dưới tác động bức xạ nhiệt kéo dài.',
+        medDiff: 'Sốc nhiễm khuẩn, Đột quỵ não.',
+        treatmentPlan: 'Di chuyển ngay vào bóng râm, uống Oresol bù dịch nhanh chóng.'
       }
     ];
 
-    // Dummy Vietnamese first & last names to generate random cute patient names
     const PATIENT_NAMES = [
       'Bé Thỏ Bông', 'Bạn Gấu Ú', 'Anh Khỉ Còi', 'Cô Sóc Nhỏ', 'Bé Na Chạy Nhanh',
       'Đậu Đậu', 'Su Su', 'Bánh Mì', 'Kem Dâu', 'Cà Phê', 'Hạt Dẻ', 'Bé Heo Hồng'
     ];
 
-    // Sounds generator using Web Audio API (totally self-contained)
+    // Sound Engine
     class CuteSoundEffects {
-      constructor() {
-        this.ctx = null;
-      }
-      init() {
-        if (!this.ctx) {
-          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-      }
+      constructor() { this.ctx = null; }
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
       playPop() {
         this.init();
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        
+        osc.connect(gain); gain.connect(this.ctx.destination);
         osc.type = 'sine';
         osc.frequency.setValueAtTime(150, this.ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.15);
-        
         gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
         gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-        
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.15);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.15);
       }
       playCorrect() {
         this.init();
@@ -744,37 +917,29 @@
         const playTone = (freq, start, duration) => {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
+          osc.connect(gain); gain.connect(this.ctx.destination);
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(freq, start);
           gain.gain.setValueAtTime(0.1, start);
           gain.gain.exponentialRampToValueAtTime(0.01, start + duration);
-          osc.start(start);
-          osc.stop(start + duration);
+          osc.start(start); osc.stop(start + duration);
         };
-        playTone(523.25, now, 0.1); // C5
-        playTone(659.25, now + 0.08, 0.1); // E5
-        playTone(783.99, now + 0.16, 0.15); // G5
-        playTone(1046.50, now + 0.24, 0.25); // C6
+        playTone(523.25, now, 0.1);
+        playTone(659.25, now + 0.08, 0.1);
+        playTone(783.99, now + 0.16, 0.15);
       }
       playWrong() {
         this.init();
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        
+        osc.connect(gain); gain.connect(this.ctx.destination);
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(180, now);
         osc.frequency.linearRampToValueAtTime(90, now + 0.4);
-        
         gain.gain.setValueAtTime(0.15, now);
         gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-        
-        osc.start();
-        osc.stop(now + 0.4);
+        osc.start(); osc.stop(now + 0.4);
       }
     }
 
@@ -782,16 +947,8 @@
 
     createApp({
       setup() {
-        // Theme state
         const theme = ref(localStorage.getItem('theme') || 'light');
-
-        // Onboarding form state
-        const onboarding = ref({
-          name: '',
-          clinicName: '',
-          avatar: '🐱'
-        });
-
+        const onboarding = ref({ name: '', clinicName: '', avatar: '🐱' });
         const avatars = ['🐱', '🐰', '🐼', '🦊', '🐷', '🦁'];
 
         // Core Doctor state
@@ -804,57 +961,97 @@
           score: parseInt(localStorage.getItem('dr_score') || '0')
         });
 
-        // Tabs
-        const currentTab = ref('clinic'); // clinic, database, history
-
-        // Cases & custom changes
+        const currentTab = ref('clinic');
         const customCases = ref([]);
+        const history = ref([]);
+        const showResetConfirm = ref(false);
 
-        // Active patient in clinic
+        // Active patient state
         const activePatient = ref({
-          id: '',
-          name: '',
-          age: 0,
-          gender: 'Nữ',
-          symptoms: '',
-          diagnosisHint: '',
-          correctDiagnosis: '',
-          treatmentPlan: '',
-          vitalSigns: { temp: 37.0, heartRate: 80 }
+          id: '', name: '', age: 0, gender: 'Nữ', symptoms: '',
+          diagnosisHint: '', correctDiagnosis: '', treatmentPlan: '',
+          vitalSigns: { temp: 37.0, heartRate: 80 },
+          clinicalExam: { pulse: 80, bloodPressure: '120/80', respiratoryRate: 18, spo2: 98, physicalSigns: 'Bình thường' },
+          labResults: { cbc: 'BT', chemistry: 'BT', electrolytes: 'BT', xray: 'BT', ecg: 'BT' },
+          explanation: { reason: '', differential: '', treatment: '' }
         });
 
-        // Student's dynamic diagnosis inputs
+        // Diagnostics states
         const studentDiagnosis = ref('');
         const showSuggestions = ref(false);
         const showHint = ref(false);
         const hintsUsed = ref(parseInt(localStorage.getItem('hints_used') || '0'));
-        const diagnosticResult = ref(null); // null, 'correct', 'wrong'
+        const diagnosticResult = ref(null);
 
-        // History logs
-        const history = ref([]);
+        // CLINICAL SYSTEM VARIABLES
+        const clinicalMindScore = ref(100);
+        const finalEarnedScore = ref(0);
+        const askedHistoryRecords = ref([]);
+        const showClinicalExam = ref(false);
+        const askedLabTests = ref(false);
 
-        // Modals management
+        // EMERGENCY MODE VARIABLES
+        const emergencyMode = ref(localStorage.getItem('emergency_mode') === 'true');
+        const emergencyTimeLeft = ref(300); // 5 minutes in seconds
+        const emergencyTimerInterval = ref(null);
+
+        // Modals
         const modal = ref({
           show: false,
-          mode: 'add', // add, edit
+          mode: 'add',
           index: -1,
           form: {
-            correctDiagnosis: '',
-            symptoms: '',
-            diagnosisHint: '',
-            ageGroup: 'Trẻ em',
-            treatmentPlan: ''
+            correctDiagnosis: '', symptoms: '', diagnosisHint: '', ageGroup: 'Trẻ em',
+            physicalSigns: '', customBp: '', medReason: '', medDiff: '', treatmentPlan: ''
           }
         });
 
-        const showResetConfirm = ref(false);
+        // Charts references
+        let scoreChartInstance = null;
+        let specialtyChartInstance = null;
 
-        // Computed: Progress bar percentage for EXP
-        const expProgress = computed(() => {
-          return doctor.value.exp % 100;
+        // Statistics computed properties
+        const totalCasesCount = computed(() => history.value.length);
+        const correctCasesCount = computed(() => history.value.filter(h => h.success).value || history.value.filter(h => h.success).length);
+        
+        const stats = computed(() => {
+          const treated = history.value.length;
+          const correct = history.value.filter(h => h.success).length;
+          const successRate = treated > 0 ? Math.round((correct / treated) * 100) : 0;
+          return { treated, correct, successRate };
         });
 
-        // Computed: Filter auto-suggest diagnosis based on what student is typing
+        const longestStreak = computed(() => {
+          let current = 0;
+          let max = 0;
+          // Sort chronologically for streak calculation
+          const chronological = [...history.value].sort((a, b) => a.time - b.time);
+          for (let h of chronological) {
+            if (h.success) {
+              current++;
+              if (current > max) max = current;
+            } else {
+              current = 0;
+            }
+          }
+          return max;
+        });
+
+        const maxScore = computed(() => {
+          if (!history.value.length) return 0;
+          return Math.max(...history.value.map(h => h.earnedScore));
+        });
+
+        const averageScore = computed(() => {
+          if (!history.value.length) return 0;
+          const total = history.value.reduce((sum, h) => sum + h.earnedScore, 0);
+          return Math.round(total / history.value.length);
+        });
+
+        const sortedHistory = computed(() => {
+          return [...history.value].sort((a, b) => b.time - a.time);
+        });
+
         const filteredDiagnoses = computed(() => {
           if (!studentDiagnosis.value) return [];
           const query = studentDiagnosis.value.toLowerCase().trim();
@@ -863,20 +1060,13 @@
             .filter(name => name.toLowerCase().includes(query));
         });
 
-        // Computed: Overall clinic stats
-        const stats = computed(() => {
-          const treated = history.value.length;
-          const correct = history.value.filter(h => h.success).length;
-          const successRate = treated > 0 ? Math.round((correct / treated) * 100) : 0;
-          return { treated, correct, successRate };
+        const formatCountdown = computed(() => {
+          const minutes = Math.floor(emergencyTimeLeft.value / 60);
+          const seconds = emergencyTimeLeft.value % 60;
+          return `${minutes}:${seconds.toString().padStart(2, '0')}`;
         });
 
-        // Computed: Sorted logs (Latest first)
-        const sortedHistory = computed(() => {
-          return [...history.value].sort((a, b) => b.time - a.time);
-        });
-
-        // Watchers to auto-persist doctor profile changes
+        // Watchers for Persistence
         watch(doctor, (newVal) => {
           localStorage.setItem('dr_name', newVal.name);
           localStorage.setItem('dr_clinic', newVal.clinicName);
@@ -886,41 +1076,41 @@
           localStorage.setItem('dr_score', newVal.score.toString());
         }, { deep: true });
 
-        // Watchers to persist custom cases & history logs
         watch(customCases, (newVal) => {
           localStorage.setItem('custom_cases', JSON.stringify(newVal));
         }, { deep: true });
 
         watch(history, (newVal) => {
           localStorage.setItem('clinic_history', JSON.stringify(newVal));
+          // Live render dashboards if we are on history tab
+          if (currentTab.value === 'history') {
+            nextTick(() => renderCharts());
+          }
         }, { deep: true });
 
-        watch(hintsUsed, (newVal) => {
-          localStorage.setItem('hints_used', newVal.toString());
-        });
-
         onMounted(() => {
-          // Dark Mode initialization
           document.documentElement.classList.toggle('dark', theme.value === 'dark');
 
-          // Load custom cases if exists, otherwise load default templates
           const savedCases = localStorage.getItem('custom_cases');
           if (savedCases) {
             customCases.value = JSON.parse(savedCases);
           } else {
-            customCases.value = [...DEFAULT_CASES];
-            localStorage.setItem('custom_cases', JSON.stringify(DEFAULT_CASES));
+            customCases.value = [...DEFAULT_CLINICAL_CASES];
+            localStorage.setItem('custom_cases', JSON.stringify(DEFAULT_CLINICAL_CASES));
           }
 
-          // Load history
           const savedHistory = localStorage.getItem('clinic_history');
           if (savedHistory) {
             history.value = JSON.parse(savedHistory);
           }
 
-          // Generate first patient if Doctor profile already setup
           if (doctor.value.name) {
             nextPatient();
+          }
+
+          // Restart emergency timer if it was active on reload
+          if (emergencyMode.value) {
+            startEmergencyTimer();
           }
         });
 
@@ -933,7 +1123,7 @@
 
         const setupDoctor = () => {
           if (!onboarding.value.name.trim()) {
-            alert("Vui lòng điền tên Bác Sĩ của bạn nhé!");
+            alert("Vui lòng nhập tên Bác Sĩ!");
             return;
           }
           if (!onboarding.value.clinicName.trim()) {
@@ -947,15 +1137,22 @@
           nextPatient();
         };
 
-        // Generates dynamic SVG sick avatar colors
         const getFaceColor = () => {
-          if (diagnosticResult.value === 'correct') return '#C6F6D5'; // Green healthy
-          if (diagnosticResult.value === 'wrong') return '#FED7D7'; // Red pale/sick
-          if (activePatient.value.vitalSigns.temp >= 38.5) return '#FED7D7'; // Fever red face
-          return '#FEFCBF'; // Pale yellow/green face
+          if (diagnosticResult.value === 'correct') return '#C6F6D5';
+          if (diagnosticResult.value === 'wrong') return '#FED7D7';
+          if (activePatient.value.vitalSigns.temp >= 38.5) return '#FED7D7';
+          return '#FEFCBF';
         };
 
-        // Patient Generator algorithm (Purely matched dynamically)
+        // Navigation Switcher
+        const switchTab = (tab) => {
+          currentTab.value = tab;
+          if (tab === 'history') {
+            nextTick(() => renderCharts());
+          }
+        };
+
+        // Advanced Next Patient Builder
         const nextPatient = () => {
           sound.playPop();
           diagnosticResult.value = null;
@@ -963,35 +1160,69 @@
           showHint.value = false;
           showSuggestions.value = false;
 
+          // Reset clinic interaction values
+          clinicalMindScore.value = 100;
+          finalEarnedScore.value = 0;
+          askedHistoryRecords.value = [];
+          showClinicalExam.value = false;
+          askedLabTests.value = false;
+
           if (!customCases.value.length) {
-            alert("Vui lòng thêm ít nhất một bệnh lý mẫu trước khi tiếp tục khám nhé!");
+            alert("Danh mục trống! Hãy bấm khôi phục danh sách mặc định ở quản lý bệnh lý.");
             return;
           }
 
-          // Pick random template from current custom cases pool
-          const randomTemplate = customCases.value[Math.floor(Math.random() * customCases.value.length)];
-          
-          // Pick age based on template ageGroup preference
-          let patientAge = 5;
-          if (randomTemplate.ageGroup === 'Trẻ em') {
-            patientAge = Math.floor(Math.random() * 9) + 2; // 2-10
-          } else if (randomTemplate.ageGroup === 'Thanh niên') {
-            patientAge = Math.floor(Math.random() * 15) + 16; // 16-30
-          } else {
-            patientAge = Math.floor(Math.random() * 40) + 31; // 31-70
+          // Find candidate matching current mode
+          let candidateCases = [...customCases.value];
+          if (emergencyMode.value) {
+            // Priority for sever cases in emergency mode (e.g. appendicitis, heat stroke)
+            candidateCases = customCases.value.filter(c => 
+              c.correctDiagnosis.toLowerCase().includes('ruột thừa') || 
+              c.correctDiagnosis.toLowerCase().includes('mất ngủ') ||
+              c.correctDiagnosis.toLowerCase().includes('say nắng')
+            );
+            if (!candidateCases.length) candidateCases = [...customCases.value];
           }
 
-          // Generate random vital signs depending on sickness
+          const randomTemplate = candidateCases[Math.floor(Math.random() * candidateCases.length)];
+          
+          let patientAge = 5;
+          if (randomTemplate.ageGroup === 'Trẻ em') {
+            patientAge = Math.floor(Math.random() * 9) + 2;
+          } else if (randomTemplate.ageGroup === 'Thanh niên') {
+            patientAge = Math.floor(Math.random() * 15) + 16;
+          } else {
+            patientAge = Math.floor(Math.random() * 40) + 31;
+          }
+
           let temp = (Math.random() * 1.5 + 36.5).toFixed(1);
           if (randomTemplate.correctDiagnosis.toLowerCase().includes('cúm') || 
               randomTemplate.correctDiagnosis.toLowerCase().includes('say nắng') || 
-              randomTemplate.correctDiagnosis.toLowerCase().includes('viêm')) {
-            temp = (Math.random() * 2.1 + 38.2).toFixed(1); // Fever temp
+              randomTemplate.correctDiagnosis.toLowerCase().includes('ruột thừa')) {
+            temp = (Math.random() * 1.8 + 38.3).toFixed(1);
           }
           
-          const heartRate = Math.floor(Math.random() * 35) + 75; // 75-110
+          const pulse = Math.floor(Math.random() * 30) + (temp > 38 ? 95 : 70);
+          const rr = temp > 38 ? Math.floor(Math.random() * 4) + 20 : Math.floor(Math.random() * 4) + 16;
+          const spo2 = temp > 39 ? 96 : Math.floor(Math.random() * 3) + 97;
 
-          // Formulate current active patient
+          // Build dynamic mock lab tests according to condition
+          let wbcs = "6.5 G/L (Bình thường)";
+          let crp = "3.2 mg/L (Bình thường)";
+          let xrayReport = "Bóng tim không to, hai phế trường sáng lành";
+          let ecgReport = "Nhịp xoang đều tần số " + pulse + " l/p";
+
+          if (randomTemplate.correctDiagnosis.toLowerCase().includes('cúm')) {
+            wbcs = "4.1 G/L (Hơi giảm nhẹ)";
+            crp = "12.5 mg/L (Tăng nhẹ phản ứng siêu vi)";
+          } else if (randomTemplate.correctDiagnosis.toLowerCase().includes('ruột thừa')) {
+            wbcs = "14.2 G/L (Bạch cầu tăng cao!)";
+            crp = "45.0 mg/L (Viêm nhiễm tăng cao!)";
+            xrayReport = "Quai ruột chướng hơi nhẹ vùng hố chậu phải";
+          } else if (randomTemplate.correctDiagnosis.toLowerCase().includes('mắt')) {
+            wbcs = "7.1 G/L (Bình thường)";
+          }
+
           activePatient.value = {
             id: Math.floor(1000 + Math.random() * 9000).toString(),
             name: PATIENT_NAMES[Math.floor(Math.random() * PATIENT_NAMES.length)],
@@ -1001,9 +1232,64 @@
             diagnosisHint: randomTemplate.diagnosisHint,
             correctDiagnosis: randomTemplate.correctDiagnosis,
             treatmentPlan: randomTemplate.treatmentPlan,
-            vitalSigns: { temp, heartRate }
+            vitalSigns: { temp, heartRate: pulse },
+            clinicalExam: {
+              pulse,
+              bloodPressure: randomTemplate.customBp || '120/80',
+              respiratoryRate: rr,
+              spo2,
+              physicalSigns: randomTemplate.physicalSigns || 'Khám thực thể không phát hiện bất thường đặc hiệu.'
+            },
+            labResults: {
+              cbc: wbcs,
+              chemistry: `Ure: 4.5 mmol/L, Creatinin: 72 umol/L, CRP: ${crp}`,
+              electrolytes: "Na+: 138 mEq/L, K+: 3.9 mEq/L, Cl-: 101 mEq/L",
+              xray: xrayReport,
+              ecg: ecgReport
+            },
+            explanation: {
+              reason: randomTemplate.medReason || 'Triệu chứng lâm sàng điển hình phù hợp đặc điểm sinh bệnh lý.',
+              differential: randomTemplate.medDiff || 'Cần phân biệt kỹ với các bệnh cảnh nhiễm trùng cấp khác.',
+              treatment: randomTemplate.treatmentPlan || 'Điều trị triệu chứng nâng cao thể trạng.'
+            }
           };
         };
+
+        // CLINICAL INTERACTION FUNCTIONS
+        // 1. Ask History (-5 Points)
+        const askHistory = () => {
+          if (diagnosticResult.value !== null) return;
+          
+          // Generate 3-5 specific history points
+          const pool = [
+            { label: 'Thời gian khởi phát', value: 'Bắt đầu âm ỉ diễn biến từ khoảng 24 giờ trước.' },
+            { label: 'Yếu tố nguy cơ', value: 'Có tiếp xúc gần hoặc sinh hoạt trong môi trường tương đồng.' },
+            { label: 'Tiền sử bản thân', value: 'Chưa từng ghi nhận bệnh lý tương tự hay dị ứng thuốc.' },
+            { label: 'Thuốc đang sử dụng', value: 'Chỉ uống thực phẩm bảo vệ sức khoẻ bổ sung vitamin.' }
+          ];
+
+          if (askedHistoryRecords.value.length < pool.length) {
+            askedHistoryRecords.value = [...pool];
+            clinicalMindScore.value = Math.max(0, clinicalMindScore.value - 5);
+            sound.playPop();
+          }
+        };
+
+        // 3. Perform Lab Tests (-15 Points)
+        const performLabTests = () => {
+          if (diagnosticResult.value !== null || askedLabTests.value) return;
+          askedLabTests.value = true;
+          clinicalMindScore.value = Math.max(0, clinicalMindScore.value - 15);
+          sound.playPop();
+        };
+
+        // Toggle clinical exam manually (-10 points deducted upon open)
+        watch(showClinicalExam, (newVal) => {
+          if (newVal && diagnosticResult.value === null) {
+            clinicalMindScore.value = Math.max(0, clinicalMindScore.value - 10);
+            sound.playPop();
+          }
+        });
 
         const selectDiagnosis = (diag) => {
           studentDiagnosis.value = diag;
@@ -1015,7 +1301,7 @@
           hintsUsed.value += 1;
         };
 
-        // Smart diagnosis grading check
+        // Check Diagnosis
         const submitDiagnosis = () => {
           if (!studentDiagnosis.value.trim() || diagnosticResult.value !== null) return;
 
@@ -1023,57 +1309,154 @@
           const cleanedCorrect = cleanText(activePatient.value.correctDiagnosis);
           const cleanedHint = cleanText(activePatient.value.diagnosisHint);
 
-          // Matching criteria: Exact matching or containing key clinical keyword hints
           const isCorrect = cleanedInput.includes(cleanedCorrect) || 
                             cleanedInput.includes(cleanedHint) ||
                             cleanedCorrect.includes(cleanedInput);
 
           if (isCorrect) {
             diagnosticResult.value = 'correct';
-            doctor.value.score += 20;
-            doctor.value.exp += 20;
-            
-            // Check level up
-            if (doctor.value.exp >= doctor.value.level * 100) {
-              doctor.value.level += 1;
-              confetti({
-                particleCount: 150,
-                spread: 80,
-                origin: { y: 0.6 }
-              });
-            }
-            
+            // Calculate final earned score (clinicalMindScore + 50 for correct)
+            finalEarnedScore.value = clinicalMindScore.value + 50;
+            doctor.value.score += finalEarnedScore.value;
+            doctor.value.exp += 25;
+
             sound.playCorrect();
-            confetti({
-              particleCount: 50,
-              spread: 60,
-              origin: { y: 0.8 }
-            });
+            confetti({ particleCount: 80, spread: 60, origin: { y: 0.8 } });
           } else {
             diagnosticResult.value = 'wrong';
+            finalEarnedScore.value = 0;
             sound.playWrong();
           }
 
-          // Push into the medical clinic logs history
+          // Push to persistent clinical database
           history.value.push({
             patientName: activePatient.value.name,
             patientAge: activePatient.value.age,
             correctDiagnosis: activePatient.value.correctDiagnosis,
             studentInput: studentDiagnosis.value.trim(),
             success: isCorrect,
+            earnedScore: finalEarnedScore.value,
+            isEmergency: emergencyMode.value,
             time: Date.now()
           });
         };
 
-        // Helper helper function to normalize Vietnamese strings (ignoring case & accents)
         const cleanText = (str) => {
           return str
             .toLowerCase()
             .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "") // Remove accents
+            .replace(/[\u0300-\u036f]/g, "")
             .replace(/đ/g, "d")
             .replace(/[^a-z0-9 ]/g, "")
             .trim();
+        };
+
+        // Emergency Mode logic
+        const toggleEmergencyMode = () => {
+          localStorage.setItem('emergency_mode', emergencyMode.value.toString());
+          if (emergencyMode.value) {
+            startEmergencyTimer();
+          } else {
+            clearInterval(emergencyTimerInterval.value);
+            emergencyTimeLeft.value = 300;
+          }
+          nextPatient();
+        };
+
+        const startEmergencyTimer = () => {
+          clearInterval(emergencyTimerInterval.value);
+          emergencyTimeLeft.value = 300;
+          emergencyTimerInterval.value = setInterval(() => {
+            if (emergencyTimeLeft.value > 0) {
+              emergencyTimeLeft.value--;
+            } else {
+              clearInterval(emergencyTimerInterval.value);
+              alert("💥 Hết giờ cấp cứu! Đồng hồ đã điểm. Bệnh nhân đang chờ!");
+              nextPatient();
+              if (emergencyMode.value) startEmergencyTimer();
+            }
+          }, 1000);
+        };
+
+        // Clinical levels system
+        const getDoctorTitle = () => {
+          const total = totalCasesCount.value;
+          if (total > 200) return "🏆 Chuyên gia chẩn đoán";
+          if (total > 100) return "🏥 Bác sĩ đa khoa";
+          if (total > 50) return "🩺 Bác sĩ tập sự";
+          if (total > 20) return "👨‍⚕️ Sinh viên lâm sàng";
+          return "👨‍⚕️ Sinh viên Y1";
+        };
+
+        // Render Analytics Dashboard Charts using Chart.js
+        const renderCharts = () => {
+          // Destory existing chart instances if any to prevent overlay bug
+          if (scoreChartInstance) scoreChartInstance.destroy();
+          if (specialtyChartInstance) specialtyChartInstance.destroy();
+
+          const ctx1 = document.getElementById('scoreHistoryChart');
+          const ctx2 = document.getElementById('specialtyChart');
+          if (!ctx1 || !ctx2) return;
+
+          // Chart 1: Scores history line chart
+          const timelineLogs = [...history.value].sort((a, b) => a.time - b.time).slice(-10); // get last 10 cases
+          const labels = timelineLogs.map((h, i) => `Ca #${i + 1}`);
+          const scores = timelineLogs.map(h => h.earnedScore);
+
+          scoreChartInstance = new Chart(ctx1, {
+            type: 'line',
+            data: {
+              labels: labels.length ? labels : ['Chưa có dữ liệu'],
+              datasets: [{
+                label: 'Điểm Lâm Sàng Đạt Được',
+                data: scores.length ? scores : [0],
+                borderColor: '#f43f5e',
+                backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                borderWidth: 4,
+                tension: 0.3,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { beginAtZero: true, max: 150, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
+              }
+            }
+          });
+
+          // Chart 2: Specialty / Categories & Diagnosis ratio doughnut chart
+          const specialtyCounts = { 'Hô hấp': 0, 'Nội tiết/Đường': 0, 'Tiêu hóa': 0, 'Tâm thần/Thần kinh': 0, 'Nhãn khoa': 0, 'Khác': 0 };
+          history.value.forEach(h => {
+            const dx = h.correctDiagnosis.toLowerCase();
+            if (dx.includes('cúm')) specialtyCounts['Hô hấp']++;
+            else if (dx.includes('trà sữa')) specialtyCounts['Nội tiết/Đường']++;
+            else if (dx.includes('ruột thừa')) specialtyCounts['Tiêu hóa']++;
+            else if (dx.includes('gấu trúc') || dx.includes('mất ngủ')) specialtyCounts['Tâm thần/Thần kinh']++;
+            else if (dx.includes('mắt')) specialtyCounts['Nhãn khoa']++;
+            else specialtyCounts['Khác']++;
+          });
+
+          specialtyChartInstance = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+              labels: Object.keys(specialtyCounts),
+              datasets: [{
+                data: Object.values(specialtyCounts),
+                backgroundColor: ['#f43f5e', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa', '#cbd5e1'],
+                borderWidth: 3,
+                borderColor: '#1e293b'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'right', labels: { font: { family: 'Quicksand', weight: 'bold' } } } }
+            }
+          });
         };
 
         // Database CRUD Operations (Thêm, Sửa, Xoá)
@@ -1084,11 +1467,8 @@
 
           if (mode === 'add') {
             modal.value.form = {
-              correctDiagnosis: '',
-              symptoms: '',
-              diagnosisHint: '',
-              ageGroup: 'Trẻ em',
-              treatmentPlan: ''
+              correctDiagnosis: '', symptoms: '', diagnosisHint: '', ageGroup: 'Trẻ em',
+              physicalSigns: '', customBp: '', medReason: '', medDiff: '', treatmentPlan: ''
             };
           } else {
             const data = customCases.value[index];
@@ -1127,20 +1507,11 @@
         };
 
         const resetToDefaultCases = () => {
-          customCases.value = [...DEFAULT_CASES];
-        };
-
-        // Utility: doctor cute ranking titles
-        const getDoctorTitle = () => {
-          const lvl = doctor.value.level;
-          if (lvl >= 10) return "🩺 Giáo Sư Viện Trưởng Siêu Cấp";
-          if (lvl >= 7) return "🌟 Thần Y Gấu Trúc Trưởng Khoa";
-          if (lvl >= 4) return "🎒 Bác Sĩ Nội Trú Chăm Chỉ";
-          return "🍼 Bác Sĩ Tập Sự Nhí Nhố";
+          customCases.value = [...DEFAULT_CLINICAL_CASES];
         };
 
         const clearHistory = () => {
-          if (confirm("Xoá sạch lịch sử khám chữa bệnh?")) {
+          if (confirm("Xoá sạch hồ sơ lâm sàng đã lưu?")) {
             history.value = [];
           }
         };
@@ -1156,40 +1527,15 @@
         };
 
         return {
-          theme,
-          onboarding,
-          avatars,
-          doctor,
-          currentTab,
-          customCases,
-          activePatient,
-          studentDiagnosis,
-          showSuggestions,
-          showHint,
-          hintsUsed,
-          diagnosticResult,
-          history,
-          modal,
-          showResetConfirm,
-          expProgress,
-          filteredDiagnoses,
-          stats,
-          sortedHistory,
-          toggleTheme,
-          setupDoctor,
-          getFaceColor,
-          nextPatient,
-          selectDiagnosis,
-          revealHint,
-          submitDiagnosis,
-          openModal,
-          saveModal,
-          deleteCase,
-          resetToDefaultCases,
-          getDoctorTitle,
-          clearHistory,
-          formatTime,
-          resetAllProgress
+          theme, onboarding, avatars, doctor, currentTab, customCases, activePatient,
+          studentDiagnosis, showSuggestions, showHint, hintsUsed, diagnosticResult,
+          history, modal, showResetConfirm, totalCasesCount, correctCasesCount, stats,
+          longestStreak, maxScore, averageScore, sortedHistory, filteredDiagnoses,
+          clinicalMindScore, finalEarnedScore, askedHistoryRecords, showClinicalExam, askedLabTests,
+          emergencyMode, formatCountdown, toggleTheme, setupDoctor, getFaceColor, switchTab,
+          nextPatient, askHistory, performLabTests, selectDiagnosis, revealHint, submitDiagnosis,
+          openModal, saveModal, deleteCase, resetToDefaultCases, getDoctorTitle, clearHistory,
+          formatTime, resetAllProgress, toggleEmergencyMode
         };
       }
     }).mount('#app');
