@@ -1,846 +1,1199 @@
 <!DOCTYPE html>
-<html lang="vi" class="light">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedStudy - Nền tảng Học tập Y khoa</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#1d4ed8', // Blue-700
-                        primaryLight: '#eff6ff', // Blue-50
-                        darkBg: '#0f172a', // Slate-900
-                        darkCard: '#1e293b', // Slate-800
-                    }
-                }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phòng Khám Siêu Cấp Nhí Nhố - Bệnh Nhân Ngẫu Nhiên</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Quicksand (Phông chữ tròn hoạt hình cực dễ thương) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for Cartoon Elements -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Confetti Effects -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <!-- Vue.js 3 Global Build -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Quicksand', 'sans-serif'],
+          },
+          colors: {
+            pastel: {
+              pink: '#FFDEE9',
+              yellow: '#FFFDF6',
+              blue: '#B5FFFC',
+              green: '#E4F9F5',
+              border: '#2C3E50'
             }
+          }
         }
-    </script>
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
-    </style>
+      }
+    }
+  </script>
+
+  <style>
+    /* Cartoon Neo-brutalism Style with Thick Borders and Flat Shadows */
+    .cartoon-card {
+      border: 4px solid #1e293b;
+      box-shadow: 6px 6px 0px 0px #1e293b;
+      transition: all 0.2s ease;
+    }
+    .cartoon-card:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 8px 8px 0px 0px #1e293b;
+    }
+    .cartoon-btn {
+      border: 3px solid #1e293b;
+      box-shadow: 4px 4px 0px 0px #1e293b;
+      transition: all 0.1s ease;
+    }
+    .cartoon-btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0px 0px #1e293b;
+    }
+    .input-cartoon {
+      border: 3px solid #1e293b;
+      border-radius: 1rem;
+      outline: none;
+    }
+    .input-cartoon:focus {
+      border-color: #f43f5e;
+      box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2);
+    }
+    
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+      border: 2px solid #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 dark:bg-darkBg dark:text-gray-200 transition-colors duration-300 flex h-screen overflow-hidden">
+<body class="font-sans antialiased text-slate-800 bg-[#FFFDF6] dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300 min-h-screen">
 
-    <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-darkCard border-r border-gray-200 dark:border-gray-700 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 flex flex-col">
-        <div class="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-2 text-primary dark:text-blue-400 font-bold text-xl">
-                <i class="fa-solid fa-staff-snake"></i> MedStudy
-            </div>
-            <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-primary"><i class="fa-solid fa-xmark text-xl"></i></button>
+  <div id="app" class="p-3 sm:p-6 max-w-6xl mx-auto" v-cloak>
+    
+    <!-- SECTION 0: ONBOARDING SCREEN (Chưa có tên bác sĩ) -->
+    <div v-if="!doctor.name" class="flex items-center justify-center min-h-[85vh]">
+      <div class="cartoon-card bg-white dark:bg-slate-800 p-6 sm:p-10 rounded-3xl max-w-md w-full text-center relative overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-24 h-24 bg-pink-300 rounded-full opacity-50 blur-xl"></div>
+        <div class="absolute -bottom-10 -left-10 w-24 h-24 bg-teal-300 rounded-full opacity-50 blur-xl"></div>
+        
+        <div class="inline-block p-4 bg-yellow-100 dark:bg-yellow-900 rounded-full mb-4 animate-bounce">
+          🩺 <span class="text-4xl">🏥</span>
         </div>
-        <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-3" id="nav-menu">
-            <!-- Nav Items Generated by JS -->
-        </nav>
-    </aside>
+        
+        <h1 class="text-3xl font-extrabold text-rose-500 mb-2">BÁC SĨ TẬP SỰ!</h1>
+        <p class="text-slate-600 dark:text-slate-300 text-sm mb-6">Chào mừng đồng chí đến với phòng khám hoạt hình siêu đáng yêu. Xin mời đăng ký Thẻ Bác Sĩ để bắt đầu nhận ca bệnh nhé!</p>
+        
+        <!-- Choose Avatar -->
+        <div class="mb-6">
+          <label class="block text-left text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Chọn ảnh đại diện của bạn:</label>
+          <div class="flex justify-center gap-3">
+            <button v-for="avt in avatars" :key="avt" 
+                    @click="onboarding.avatar = avt"
+                    class="text-3xl p-3 rounded-2xl border-4 transition-all"
+                    :class="onboarding.avatar === avt ? 'border-pink-500 bg-pink-100 dark:bg-pink-900 scale-110' : 'border-slate-300 bg-slate-50 dark:bg-slate-700'">
+              {{ avt }}
+            </button>
+          </div>
+        </div>
 
-    <!-- OVERLAY FOR MOBILE SIDEBAR -->
-    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+        <!-- Nickname -->
+        <div class="mb-5">
+          <label class="block text-left text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tên Bác Sĩ Của Bạn:</label>
+          <input type="text" v-model="onboarding.name" placeholder="Ví dụ: Bác sĩ Thỏ Bảy Màu" 
+                 class="w-full px-4 py-3 text-center input-cartoon bg-slate-50 dark:bg-slate-700 text-lg font-bold">
+        </div>
 
-    <!-- MAIN CONTENT -->
-    <div class="flex-1 flex flex-col h-screen overflow-hidden">
-        <!-- HEADER -->
-        <header class="h-16 bg-white dark:bg-darkCard border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 sm:px-6 z-10">
-            <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-primary"><i class="fa-solid fa-bars text-xl"></i></button>
-                <h1 id="page-title" class="font-semibold text-lg uppercase tracking-wide">Trang Chủ</h1>
-            </div>
-            <div class="flex items-center gap-4">
-                <button onclick="switchTab('notifications')" class="relative text-gray-500 hover:text-primary transition">
-                    <i class="fa-solid fa-bell text-xl"></i>
-                    <span id="notif-badge" class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">3</span>
-                </button>
-                <button onclick="toggleTheme()" class="text-gray-500 hover:text-primary transition">
-                    <i id="theme-icon" class="fa-solid fa-moon text-xl"></i>
-                </button>
-                <div class="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm shadow-md">BS</div>
-            </div>
-        </header>
+        <!-- Clinic Name -->
+        <div class="mb-6">
+          <label class="block text-left text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tên Phòng Khám (Tự Đặt):</label>
+          <input type="text" v-model="onboarding.clinicName" placeholder="Phòng Khám SOS Nhí Nhố" 
+                 class="w-full px-4 py-3 text-center input-cartoon bg-slate-50 dark:bg-slate-700 text-base font-bold">
+        </div>
 
-        <!-- CONTENT AREA -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-darkBg p-4 sm:p-6" id="main-container">
-            
-            <!-- 1. DASHBOARD -->
-            <section id="dashboard" class="tab-content active space-y-6">
-                <!-- Motivation Banner -->
-                <div class="bg-gradient-to-r from-blue-600 to-primary rounded-2xl p-6 sm:p-8 text-white shadow-lg relative group">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-sm font-medium bg-white/20 px-3 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-fire mr-1"></i> Động lực học tập</span>
-                        <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                            <button onclick="editQuote()" class="bg-white/20 hover:bg-white/30 p-2 rounded-lg text-xs" title="Sửa"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="addQuote()" class="bg-white/20 hover:bg-white/30 p-2 rounded-lg text-xs" title="Thêm"><i class="fa-solid fa-plus"></i></button>
-                            <button onclick="deleteQuote()" class="bg-red-500/80 hover:bg-red-500 p-2 rounded-lg text-xs" title="Xóa"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>
-                    <p id="quote-text" class="text-xl sm:text-3xl font-bold italic mt-4 leading-tight line-clamp-2">"Cứ đi rồi sẽ đến."</p>
-                </div>
-
-                <!-- Stats Overview -->
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase">Giờ học</p>
-                        <p class="text-2xl font-bold text-primary mt-1">128h</p>
-                    </div>
-                    <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase">Bài học</p>
-                        <p class="text-2xl font-bold text-green-500 mt-1">45</p>
-                    </div>
-                    <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase">Câu hỏi</p>
-                        <p class="text-2xl font-bold text-orange-500 mt-1" id="stat-questions">1,250</p>
-                    </div>
-                    <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase">Kỹ năng</p>
-                        <p class="text-2xl font-bold text-purple-500 mt-1" id="stat-skills">0</p>
-                    </div>
-                    <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase">GPA</p>
-                        <p class="text-2xl font-bold text-red-500 mt-1" id="stat-gpa">0.0</p>
-                    </div>
-                    <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase">Streak</p>
-                        <p class="text-2xl font-bold text-yellow-500 mt-1">🔥 14</p>
-                    </div>
-                </div>
-
-                <!-- Charts & Tasks -->
-                <div class="grid lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 bg-white dark:bg-darkCard p-5 rounded-2xl shadow-sm border dark:border-gray-700">
-                        <h3 class="font-bold text-gray-800 dark:text-white mb-4">Biểu đồ tiến độ (Giờ học/Tuần)</h3>
-                        <canvas id="progressChart" height="250"></canvas>
-                    </div>
-                    
-                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl shadow-sm border dark:border-gray-700 flex flex-col">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-gray-800 dark:text-white">Nhiệm vụ hôm nay</h3>
-                            <span id="task-progress-text" class="text-xs font-bold text-primary bg-primaryLight dark:bg-blue-900/30 px-2 py-1 rounded-full">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4 overflow-hidden">
-                            <div id="task-progress-bar" class="bg-primary h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                        </div>
-                        <div class="flex-1 overflow-y-auto pr-2 space-y-2" id="task-list">
-                            <!-- Tasks injected by JS -->
-                        </div>
-                        <div class="mt-4 flex gap-2">
-                            <input type="text" id="new-task-input" placeholder="Thêm việc cần làm..." class="flex-1 bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary">
-                            <button onclick="addTask()" class="bg-primary text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 2. MODULE LÝ THUYẾT (AI) -->
-            <section id="theory" class="tab-content space-y-6">
-                <!-- Upload Area -->
-                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl shadow-sm border dark:border-gray-700">
-                    <h3 class="font-bold text-lg mb-4 border-b dark:border-gray-700 pb-2"><i class="fa-solid fa-robot text-primary mr-2"></i>AI Trợ lý Lý thuyết</h3>
-                    
-                    <div id="upload-area" class="border-2 border-dashed border-primary/50 bg-primaryLight dark:bg-blue-900/10 rounded-xl p-8 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition" onclick="document.getElementById('file-upload').click()">
-                        <i class="fa-solid fa-cloud-arrow-up text-4xl text-primary mb-3"></i>
-                        <p class="font-medium">Click hoặc kéo thả tài liệu để AI phân tích</p>
-                        <p class="text-xs text-gray-500 mt-1">Hỗ trợ: PDF, DOCX, PPTX, TXT</p>
-                        <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload()">
-                    </div>
-
-                    <!-- AI Processing Simulation -->
-                    <div id="ai-loading" class="hidden mt-6 text-center py-8">
-                        <i class="fa-solid fa-microchip text-4xl text-primary animate-pulse mb-4"></i>
-                        <p class="font-medium animate-bounce">AI đang đọc tài liệu, tóm tắt và sinh câu hỏi...</p>
-                        <div class="w-64 h-2 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mt-4 overflow-hidden">
-                            <div class="w-1/2 h-full bg-primary rounded-full animate-[ping_2s_ease-in-out_infinite]"></div>
-                        </div>
-                    </div>
-
-                    <!-- AI Results -->
-                    <div id="ai-results" class="hidden mt-6 space-y-6">
-                        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex justify-between items-center">
-                            <span class="font-bold text-green-700 dark:text-green-400"><i class="fa-solid fa-check-circle mr-2"></i>AI đã xử lý xong tài liệu: <span id="file-name-display" class="font-normal italic"></span></span>
-                            <button onclick="resetUpload()" class="text-sm text-gray-500 hover:text-red-500 underline">Tải file khác</button>
-                        </div>
-
-                        <div class="grid lg:grid-cols-2 gap-6">
-                            <!-- Tóm tắt & Highlight -->
-                            <div class="space-y-4">
-                                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
-                                    <h4 class="font-bold text-primary mb-2">Tóm tắt & Sơ đồ tư duy</h4>
-                                    <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Tài liệu đề cập đến Bệnh học Viêm phổi cấp. Nguyên nhân hàng đầu do Phế cầu khuẩn. Sinh lý bệnh gồm 4 giai đoạn: sung huyết, đông đặc đỏ, đông đặc xám và lui bệnh.</p>
-                                    <div class="mt-3 flex gap-2 flex-wrap">
-                                        <span class="text-xs bg-white dark:bg-darkCard border px-2 py-1 rounded">#Viêm_phổi</span>
-                                        <span class="text-xs bg-white dark:bg-darkCard border px-2 py-1 rounded">#Phế_cầu</span>
-                                        <span class="text-xs bg-white dark:bg-darkCard border px-2 py-1 rounded">#Đông_đặc</span>
-                                    </div>
-                                </div>
-                                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
-                                    <h4 class="font-bold text-primary mb-2">Highlight Kiến thức</h4>
-                                    <ul class="text-sm space-y-2">
-                                        <li><b class="text-orange-500">Triệu chứng:</b> Sốt cao rét run, ho khạc đờm rỉ sắt, đau ngực.</li>
-                                        <li><b class="text-blue-500">Chẩn đoán:</b> X-quang có đám mờ hình tam giác, bạch cầu tăng cao.</li>
-                                        <li><b class="text-green-500">Điều trị:</b> Kháng sinh (Beta-lactam + Macrolide), hạ sốt, thở Oxy.</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <!-- Câu hỏi sinh ra -->
-                            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
-                                <h4 class="font-bold text-primary mb-3">AI Sinh Câu Hỏi Ôn Tập</h4>
-                                <div class="space-y-3">
-                                    <div class="p-3 bg-white dark:bg-darkCard border dark:border-gray-700 rounded-lg">
-                                        <span class="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded uppercase">Dễ - Trắc nghiệm</span>
-                                        <p class="text-sm mt-1 font-medium">Tác nhân gây viêm phổi thùy thường gặp nhất là?</p>
-                                        <div class="mt-2 text-xs space-y-1 text-gray-600 dark:text-gray-400">
-                                            <p><input type="radio" name="q1"> A. H. influenzae</p>
-                                            <p><input type="radio" name="q1" checked> B. S. pneumoniae (Phế cầu)</p>
-                                            <p><input type="radio" name="q1"> C. K. pneumoniae</p>
-                                        </div>
-                                    </div>
-                                    <div class="p-3 bg-white dark:bg-darkCard border dark:border-gray-700 rounded-lg">
-                                        <span class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded uppercase">TB - Điền khuyết</span>
-                                        <p class="text-sm mt-1 font-medium">Đờm đặc trưng trong viêm phổi thùy có màu ______.</p>
-                                        <p class="text-xs text-green-600 mt-1 italic">Đáp án AI gợi ý: Rỉ sắt</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Document Library -->
-                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl shadow-sm border dark:border-gray-700">
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                        <h3 class="font-bold text-lg"><i class="fa-solid fa-book-open text-primary mr-2"></i>Thư Viện Tài Liệu</h3>
-                        <div class="flex gap-2 w-full md:w-auto">
-                            <input type="text" id="lib-search" onkeyup="renderLibrary()" placeholder="Tìm kiếm..." class="bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none flex-1 md:w-48">
-                            <select id="lib-filter" onchange="renderLibrary()" class="bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none">
-                                <option value="All">Tất cả</option>
-                                <option value="Giải phẫu">Giải phẫu</option>
-                                <option value="Nội khoa">Nội khoa</option>
-                                <option value="Ngoại khoa">Ngoại khoa</option>
-                                <option value="Nhi">Nhi</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="library-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <!-- Library items injected by JS -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- 3. MODULE THỰC HÀNH -->
-            <section id="practice" class="tab-content space-y-6">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold">Kỹ Năng Lâm Sàng</h2>
-                    <button onclick="addSkill()" class="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 text-sm font-medium"><i class="fa-solid fa-plus mr-1"></i>Thêm kỹ năng</button>
-                </div>
-
-                <div id="skills-container" class="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    <!-- Skills injected by JS -->
-                </div>
-            </section>
-
-            <!-- 4. MODULE THÓI QUEN HỌC TẬP -->
-            <section id="habits" class="tab-content space-y-6">
-                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl shadow-sm border dark:border-gray-700">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-lg"><i class="fa-solid fa-calendar-check text-primary mr-2"></i>Theo Dõi Thói Quen Hàng Ngày</h3>
-                        <button onclick="addHabit()" class="text-primary text-sm font-semibold hover:underline"><i class="fa-solid fa-plus"></i> Tạo thói quen</button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b dark:border-gray-700 text-sm text-gray-500 uppercase tracking-wider">
-                                    <th class="pb-3 w-1/3">Thói quen</th>
-                                    <th class="pb-3 text-center">T2</th>
-                                    <th class="pb-3 text-center">T3</th>
-                                    <th class="pb-3 text-center">T4</th>
-                                    <th class="pb-3 text-center">T5</th>
-                                    <th class="pb-3 text-center">T6</th>
-                                    <th class="pb-3 text-center">T7</th>
-                                    <th class="pb-3 text-center">CN</th>
-                                    <th class="pb-3 text-center w-10"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="habits-list" class="text-sm">
-                                <!-- Habits injected by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 5. MODULE QUẢN LÝ ĐIỂM -->
-            <section id="grades" class="tab-content space-y-6">
-                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl shadow-sm border dark:border-gray-700">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-lg"><i class="fa-solid fa-graduation-cap text-primary mr-2"></i>Bảng Điểm & GPA</h3>
-                        <div class="bg-primaryLight dark:bg-blue-900/30 text-primary font-bold px-4 py-2 rounded-lg text-lg">
-                            GPA Tổng: <span id="gpa-display">0.00</span> / 4.0
-                        </div>
-                    </div>
-
-                    <div class="grid md:grid-cols-4 gap-4 mb-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
-                        <input type="text" id="grade-subject" placeholder="Tên môn học (vd: Giải phẫu)" class="bg-white dark:bg-darkCard border dark:border-gray-600 rounded-lg px-3 py-2 outline-none w-full md:col-span-2">
-                        <input type="number" id="grade-credits" placeholder="Số tín chỉ" min="1" class="bg-white dark:bg-darkCard border dark:border-gray-600 rounded-lg px-3 py-2 outline-none w-full">
-                        <div class="flex gap-2">
-                            <input type="number" id="grade-score" placeholder="Điểm (hệ 10)" step="0.1" min="0" max="10" class="bg-white dark:bg-darkCard border dark:border-gray-600 rounded-lg px-3 py-2 outline-none w-full">
-                            <button onclick="addGrade()" class="bg-primary text-white px-4 rounded-lg hover:bg-blue-700"><i class="fa-solid fa-check"></i></button>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b dark:border-gray-700 text-sm text-gray-500 uppercase">
-                                    <th class="pb-3">Môn học</th>
-                                    <th class="pb-3 text-center">Tín chỉ</th>
-                                    <th class="pb-3 text-center">Điểm (10)</th>
-                                    <th class="pb-3 text-center text-primary">Điểm (4)</th>
-                                    <th class="pb-3 text-right">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="grades-list" class="text-sm">
-                                <!-- Grades injected by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 6. THÔNG BÁO -->
-            <section id="notifications" class="tab-content space-y-6">
-                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl shadow-sm border dark:border-gray-700 max-w-3xl mx-auto">
-                    <h3 class="font-bold text-lg mb-6 border-b dark:border-gray-700 pb-3"><i class="fa-solid fa-bell text-primary mr-2"></i>Trung Tâm Thông Báo</h3>
-                    <div id="notif-list" class="space-y-3">
-                        <!-- Notifications injected by JS -->
-                    </div>
-                </div>
-            </section>
-
-        </main>
+        <button @click="setupDoctor" class="cartoon-btn w-full bg-emerald-400 hover:bg-emerald-500 text-slate-950 font-extrabold text-lg py-3 rounded-2xl flex items-center justify-center gap-2">
+          <span>Khởi Động Phòng Khám!</span> 🚀
+        </button>
+      </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
-    <script>
-        /* ========================
-           STATE MANAGEMENT & DATA
-           ======================== */
-        const defaultData = {
-            theme: 'light',
-            quotes: ["Kiến thức Y khoa là đại dương, hãy chèo lái bằng sự kiên trì.", "Cứ đi rồi sẽ đến.", "Mỗi giờ học là một nhịp đập cứu người trong tương lai."],
-            currentQuoteIdx: 0,
-            todos: [
-                { id: 1, text: "Học lý thuyết Giải phẫu", done: true },
-                { id: 2, text: "Làm 50 câu trắc nghiệm Nội khoa", done: false },
-                { id: 3, text: "Xem video thực hành Khám bụng", done: false }
-            ],
-            library: [
-                { id: 1, title: "Giáo trình Giải phẫu người", cat: "Giải phẫu", type: "PDF" },
-                { id: 2, title: "Bài giảng Sinh lý Tim mạch", cat: "Sinh lý", type: "PPTX" },
-                { id: 3, title: "Triệu chứng học Nội khoa", cat: "Nội khoa", type: "DOCX" }
-            ],
-            skills: [
-                { 
-                    id: 1, name: "Khám bụng", rating: 3, video: "https://youtube.com/results?search_query=kham+bung+y+khoa",
-                    steps: [{text: "Nhìn", done: false}, {text: "Nghe", done: false}, {text: "Gõ", done: false}, {text: "Sờ", done: false}],
-                    log: "Thực hành tại lab ngày 12/10. Cần luyện thêm kỹ năng Gõ."
-                },
-                { 
-                    id: 2, name: "Tiêm tĩnh mạch", rating: 4, video: "https://youtube.com/results?search_query=tiem+tinh+mach",
-                    steps: [{text: "Sát khuẩn", done: true}, {text: "Đâm kim 15-30 độ", done: true}, {text: "Rút thử máu", done: true}, {text: "Bơm thuốc", done: true}],
-                    log: "Đã làm trên mô hình tốt."
-                }
-            ],
-            habits: [
-                { id: 1, name: "Học 2 giờ/ngày", days: [true, true, true, false, false, false, false] },
-                { id: 2, name: "Làm 20 MCQ", days: [true, false, true, true, false, false, false] }
-            ],
-            grades: [
-                { id: 1, subject: "Nội cơ sở", credits: 3, score10: 8.5 },
-                { id: 2, subject: "Ngoại cơ sở", credits: 3, score10: 7.2 }
-            ],
-            notifications: [
-                { id: 1, title: "Lịch thi", text: "Thi thực hành Giải phẫu vào thứ 6 tuần này.", isNew: true },
-                { id: 2, title: "Nhiệm vụ", text: "Bạn chưa hoàn thành mục tiêu 20 MCQ hôm nay.", isNew: true },
-                { id: 3, title: "Chúc mừng", text: "Bạn đã duy trì chuỗi học tập 14 ngày liên tiếp!", isNew: true }
-            ]
-        };
-
-        // Load data from LocalStorage or use default
-        let appData = JSON.parse(localStorage.getItem('medStudyData')) || defaultData;
-
-        function saveData() {
-            localStorage.setItem('medStudyData', JSON.stringify(appData));
-            updateGlobalStats();
-        }
-
-        /* ========================
-           NAVIGATION & UI
-           ======================== */
-        const tabs = [
-            { id: 'dashboard', icon: 'fa-chart-pie', text: 'Trang Chủ' },
-            { id: 'theory', icon: 'fa-book-medical', text: 'Module Lý Thuyết' },
-            { id: 'practice', icon: 'fa-stethoscope', text: 'Module Thực Hành' },
-            { id: 'habits', icon: 'fa-calendar-check', text: 'Thói Quen' },
-            { id: 'grades', icon: 'fa-graduation-cap', text: 'Quản Lý Điểm' },
-            { id: 'notifications', icon: 'fa-bell', text: 'Thông Báo' }
-        ];
-
-        function initNav() {
-            const navMenu = document.getElementById('nav-menu');
-            navMenu.innerHTML = tabs.map(tab => `
-                <button onclick="switchTab('${tab.id}')" id="nav-${tab.id}" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${tab.id === 'dashboard' ? 'bg-primaryLight text-primary dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}">
-                    <i class="fa-solid ${tab.icon} w-5 text-center"></i> <span>${tab.text}</span>
-                </button>
-            `).join('');
-        }
-
-        function switchTab(tabId) {
-            // Update UI Tabs
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            
-            // Update Nav styling
-            document.querySelectorAll('#nav-menu button').forEach(btn => {
-                btn.className = 'w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
-            });
-            const activeBtn = document.getElementById(`nav-${tabId}`);
-            if(activeBtn) activeBtn.className = 'w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors bg-primaryLight text-primary dark:bg-blue-900/30 dark:text-blue-400';
-            
-            // Update Title
-            const tabInfo = tabs.find(t => t.id === tabId);
-            document.getElementById('page-title').innerText = tabInfo ? tabInfo.text : '';
-
-            if (window.innerWidth < 768) toggleSidebar();
-            
-            // Re-render specific tab contents
-            if(tabId === 'theory') renderLibrary();
-            if(tabId === 'practice') renderSkills();
-            if(tabId === 'habits') renderHabits();
-            if(tabId === 'grades') renderGrades();
-            if(tabId === 'notifications') renderNotifications();
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            const icon = document.getElementById('theme-icon');
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                appData.theme = 'light';
-                icon.className = 'fa-solid fa-moon text-xl';
-            } else {
-                html.classList.add('dark');
-                appData.theme = 'dark';
-                icon.className = 'fa-solid fa-sun text-xl';
-            }
-            saveData();
-            initChart(); // Re-render chart for colors
-        }
-
-        /* ========================
-           DASHBOARD LOGIC
-           ======================== */
-        function renderDashboard() {
-            // Quotes
-            if(appData.quotes.length === 0) appData.quotes = ["Hãy thêm câu nói động lực của bạn!"];
-            if(appData.currentQuoteIdx >= appData.quotes.length) appData.currentQuoteIdx = 0;
-            document.getElementById('quote-text').innerText = `"${appData.quotes[appData.currentQuoteIdx]}"`;
-
-            // Todos
-            const list = document.getElementById('task-list');
-            list.innerHTML = appData.todos.map((task, idx) => `
-                <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                    <div class="flex items-center gap-3 flex-1">
-                        <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${idx})" class="w-4 h-4 text-primary rounded focus:ring-primary">
-                        <span class="text-sm font-medium ${task.done ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}">${task.text}</span>
-                    </div>
-                    <button onclick="deleteTask(${idx})" class="text-gray-400 hover:text-red-500 ml-2"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                </label>
-            `).join('');
-
-            const doneCount = appData.todos.filter(t => t.done).length;
-            const totalCount = appData.todos.length;
-            const percent = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
-            
-            document.getElementById('task-progress-text').innerText = `${percent}%`;
-            document.getElementById('task-progress-bar').style.width = `${percent}%`;
-
-            if(percent === 100 && totalCount > 0) {
-                // Short timeout to allow UI update
-                setTimeout(() => alert("🎉 Tuyệt vời! Bạn đã hoàn thành tất cả nhiệm vụ hôm nay!"), 100);
-            }
-        }
-
-        // Quote Functions
-        function addQuote() {
-            const q = prompt("Nhập câu nói động lực mới:");
-            if(q) { appData.quotes.push(q); appData.currentQuoteIdx = appData.quotes.length-1; saveData(); renderDashboard(); }
-        }
-        function editQuote() {
-            const q = prompt("Sửa câu nói:", appData.quotes[appData.currentQuoteIdx]);
-            if(q) { appData.quotes[appData.currentQuoteIdx] = q; saveData(); renderDashboard(); }
-        }
-        function deleteQuote() {
-            if(appData.quotes.length <= 1) return alert("Không thể xóa câu duy nhất!");
-            if(confirm("Xóa câu nói này?")) {
-                appData.quotes.splice(appData.currentQuoteIdx, 1);
-                appData.currentQuoteIdx = 0;
-                saveData(); renderDashboard();
-            }
-        }
-        // Change quote every 10s
-        setInterval(() => {
-            appData.currentQuoteIdx = (appData.currentQuoteIdx + 1) % appData.quotes.length;
-            document.getElementById('quote-text').innerText = `"${appData.quotes[appData.currentQuoteIdx]}"`;
-            saveData();
-        }, 10000);
-
-        // Todo Functions
-        function addTask() {
-            const input = document.getElementById('new-task-input');
-            const txt = input.value.trim();
-            if(txt) {
-                appData.todos.push({ id: Date.now(), text: txt, done: false });
-                input.value = '';
-                saveData(); renderDashboard();
-            }
-        }
-        function toggleTask(idx) { appData.todos[idx].done = !appData.todos[idx].done; saveData(); renderDashboard(); }
-        function deleteTask(idx) { appData.todos.splice(idx, 1); saveData(); renderDashboard(); }
-
-        // Chart.js
-        let myChart;
-        function initChart() {
-            const ctx = document.getElementById('progressChart').getContext('2d');
-            const isDark = document.documentElement.classList.contains('dark');
-            const textColor = isDark ? '#9ca3af' : '#4b5563';
-            const gridColor = isDark ? '#374151' : '#e5e7eb';
-
-            if(myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-                    datasets: [{
-                        label: 'Số giờ học',
-                        data: [4, 5.5, 3, 6, 4, 8, 2],
-                        backgroundColor: '#1d4ed8', // primary
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { ticks: { color: textColor }, grid: { color: gridColor } },
-                        x: { ticks: { color: textColor }, grid: { display: false } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
-
-        /* ========================
-           THEORY MODULE
-           ======================== */
-        function handleFileUpload() {
-            const fileInput = document.getElementById('file-upload');
-            if(!fileInput.files.length) return;
-            const fileName = fileInput.files[0].name;
-
-            document.getElementById('upload-area').classList.add('hidden');
-            document.getElementById('ai-loading').classList.remove('hidden');
-            document.getElementById('ai-results').classList.add('hidden');
-
-            // Simulate AI Processing
-            setTimeout(() => {
-                document.getElementById('ai-loading').classList.add('hidden');
-                document.getElementById('file-name-display').innerText = fileName;
-                document.getElementById('ai-results').classList.remove('hidden');
-                
-                // Add to library
-                appData.library.unshift({ id: Date.now(), title: fileName.split('.')[0], cat: "Chưa phân loại", type: fileName.split('.').pop().toUpperCase() });
-                saveData();
-                renderLibrary();
-            }, 3000);
-        }
-
-        function resetUpload() {
-            document.getElementById('file-upload').value = '';
-            document.getElementById('upload-area').classList.remove('hidden');
-            document.getElementById('ai-results').classList.add('hidden');
-        }
-
-        function renderLibrary() {
-            const search = document.getElementById('lib-search').value.toLowerCase();
-            const filter = document.getElementById('lib-filter').value;
-            const grid = document.getElementById('library-grid');
-
-            const filtered = appData.library.filter(item => {
-                const matchSearch = item.title.toLowerCase().includes(search) || item.cat.toLowerCase().includes(search);
-                const matchFilter = filter === 'All' || item.cat === filter;
-                return matchSearch && matchFilter;
-            });
-
-            grid.innerHTML = filtered.map(item => `
-                <div class="p-4 border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-start gap-4 hover:shadow-md transition cursor-pointer">
-                    <div class="h-10 w-10 bg-white dark:bg-darkCard rounded-lg flex items-center justify-center text-primary shadow-sm font-bold text-xs shrink-0">${item.type}</div>
-                    <div class="overflow-hidden">
-                        <h4 class="font-semibold text-sm truncate">${item.title}</h4>
-                        <span class="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-primary px-2 py-0.5 rounded-full mt-1 inline-block">${item.cat}</span>
-                    </div>
-                </div>
-            `).join('');
-            if(filtered.length === 0) grid.innerHTML = `<p class="text-sm text-gray-500 col-span-full">Không tìm thấy tài liệu nào.</p>`;
-        }
-
-        /* ========================
-           PRACTICE MODULE
-           ======================== */
-        function renderSkills() {
-            const container = document.getElementById('skills-container');
-            container.innerHTML = appData.skills.map((skill, sIdx) => {
-                // Stars
-                let stars = '';
-                for(let i=1; i<=5; i++){
-                    let cls = i <= skill.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600';
-                    stars += `<i class="fa-solid fa-star cursor-pointer ${cls}" onclick="rateSkill(${sIdx}, ${i})" title="${getRatingText(i)}"></i>`;
-                }
-
-                // Checklist
-                let checklist = skill.steps.map((step, stIdx) => `
-                    <div class="flex items-center justify-between group">
-                        <label class="flex items-center gap-2 cursor-pointer flex-1">
-                            <input type="checkbox" ${step.done ? 'checked' : ''} onchange="toggleStep(${sIdx}, ${stIdx})" class="w-3.5 h-3.5 rounded accent-primary">
-                            <span class="text-xs ${step.done ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}">${step.text}</span>
-                        </label>
-                        <button onclick="deleteStep(${sIdx}, ${stIdx})" class="text-red-400 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-xmark text-xs"></i></button>
-                    </div>
-                `).join('');
-
-                return `
-                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl shadow-sm border dark:border-gray-700 flex flex-col">
-                        <div class="flex justify-between items-start mb-2">
-                            <h4 class="font-bold text-primary dark:text-blue-400">${skill.name}</h4>
-                            <button onclick="deleteSkill(${sIdx})" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
-                        </div>
-                        <div class="flex gap-1 mb-1 text-sm">${stars}</div>
-                        <p class="text-[10px] text-gray-500 mb-4">${getRatingText(skill.rating)}</p>
-
-                        <div class="flex-1 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg mb-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-xs font-bold uppercase text-gray-500">Checklist</span>
-                                <button onclick="addStep(${sIdx})" class="text-primary text-xs hover:underline"><i class="fa-solid fa-plus"></i> Thêm</button>
-                            </div>
-                            <div class="space-y-2">${checklist}</div>
-                        </div>
-
-                        <div class="space-y-2">
-                            <div class="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg text-xs">
-                                <span class="font-bold text-primary block mb-1">Nhật ký:</span>
-                                <span class="text-gray-600 dark:text-gray-300" onclick="editLog(${sIdx})" class="cursor-pointer hover:underline">${skill.log || 'Click để thêm nhật ký...'}</span>
-                            </div>
-                            <a href="${skill.video}" target="_blank" class="block w-full text-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-xs font-bold transition">
-                                <i class="fa-brands fa-youtube text-red-500 mr-1"></i> Xem Video Hướng Dẫn
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function getRatingText(r) {
-            const t = ["Chưa đánh giá", "⭐ Chưa biết", "⭐⭐ Biết lý thuyết", "⭐⭐⭐ Làm có hướng dẫn", "⭐⭐⭐⭐ Làm độc lập", "⭐⭐⭐⭐⭐ Thành thạo"];
-            return t[r] || t[0];
-        }
-
-        function addSkill() {
-            const name = prompt("Tên kỹ năng mới:");
-            if(name) {
-                appData.skills.push({ id: Date.now(), name, rating: 0, steps: [{text:"Chuẩn bị", done:false}], log: "", video: "https://youtube.com/results?search_query="+encodeURIComponent(name) });
-                saveData(); renderSkills();
-            }
-        }
-        function deleteSkill(idx) { if(confirm("Xóa kỹ năng này?")) { appData.skills.splice(idx, 1); saveData(); renderSkills(); } }
-        function rateSkill(sIdx, rating) { appData.skills[sIdx].rating = rating; saveData(); renderSkills(); }
-        function addStep(sIdx) {
-            const txt = prompt("Nhập bước checklist:");
-            if(txt) { appData.skills[sIdx].steps.push({text: txt, done: false}); saveData(); renderSkills(); }
-        }
-        function toggleStep(sIdx, stIdx) { appData.skills[sIdx].steps[stIdx].done = !appData.skills[sIdx].steps[stIdx].done; saveData(); renderSkills(); }
-        function deleteStep(sIdx, stIdx) { appData.skills[sIdx].steps.splice(stIdx, 1); saveData(); renderSkills(); }
-        function editLog(sIdx) {
-            const log = prompt("Nhật ký thực hành (Ngày, nơi, cảm nhận...):", appData.skills[sIdx].log);
-            if(log !== null) { appData.skills[sIdx].log = log; saveData(); renderSkills(); }
-        }
-
-        /* ========================
-           HABITS MODULE
-           ======================== */
-        function renderHabits() {
-            const tbody = document.getElementById('habits-list');
-            tbody.innerHTML = appData.habits.map((h, hIdx) => {
-                let daysHtml = h.days.map((done, dIdx) => `
-                    <td class="text-center py-2">
-                        <button onclick="toggleHabitDay(${hIdx}, ${dIdx})" class="w-6 h-6 rounded-md flex items-center justify-center transition ${done ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-transparent hover:bg-gray-300'}">
-                            <i class="fa-solid fa-check text-[10px]"></i>
-                        </button>
-                    </td>
-                `).join('');
-                return `
-                    <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <td class="py-3 font-medium">${h.name}</td>
-                        ${daysHtml}
-                        <td class="text-right"><button onclick="deleteHabit(${hIdx})" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash-can text-sm"></i></button></td>
-                    </tr>
-                `;
-            }).join('');
-        }
-        function addHabit() {
-            const name = prompt("Tên thói quen (VD: Học 2 giờ/ngày):");
-            if(name) { appData.habits.push({ id: Date.now(), name, days: Array(7).fill(false) }); saveData(); renderHabits(); }
-        }
-        function toggleHabitDay(hIdx, dIdx) { appData.habits[hIdx].days[dIdx] = !appData.habits[hIdx].days[dIdx]; saveData(); renderHabits(); }
-        function deleteHabit(hIdx) { if(confirm("Xóa thói quen này?")) { appData.habits.splice(hIdx, 1); saveData(); renderHabits(); } }
-
-        /* ========================
-           GRADES MODULE
-           ======================== */
-        function renderGrades() {
-            const tbody = document.getElementById('grades-list');
-            let totalCredits = 0;
-            let totalPoints4 = 0;
-
-            tbody.innerHTML = appData.grades.map((g, idx) => {
-                const score4 = convertToGPA4(g.score10);
-                totalCredits += g.credits;
-                totalPoints4 += score4 * g.credits;
-
-                return `
-                    <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <td class="py-3 font-medium">${g.subject}</td>
-                        <td class="text-center py-3">${g.credits}</td>
-                        <td class="text-center py-3 font-semibold">${g.score10.toFixed(1)}</td>
-                        <td class="text-center py-3 font-bold text-primary">${score4.toFixed(1)}</td>
-                        <td class="text-right py-3"><button onclick="deleteGrade(${idx})" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash-can"></i></button></td>
-                    </tr>
-                `;
-            }).join('');
-
-            const finalGPA = totalCredits > 0 ? (totalPoints4 / totalCredits).toFixed(2) : "0.00";
-            document.getElementById('gpa-display').innerText = finalGPA;
-            document.getElementById('stat-gpa').innerText = finalGPA; // Sync with dashboard
-        }
-
-        function convertToGPA4(score10) {
-            if(score10 >= 8.5) return 4.0;
-            if(score10 >= 8.0) return 3.5;
-            if(score10 >= 7.0) return 3.0;
-            if(score10 >= 6.5) return 2.5;
-            if(score10 >= 5.5) return 2.0;
-            if(score10 >= 5.0) return 1.5;
-            if(score10 >= 4.0) return 1.0;
-            return 0.0;
-        }
-
-        function addGrade() {
-            const sub = document.getElementById('grade-subject').value.trim();
-            const cred = parseInt(document.getElementById('grade-credits').value);
-            const sc = parseFloat(document.getElementById('grade-score').value);
-
-            if(sub && cred > 0 && sc >= 0 && sc <= 10) {
-                appData.grades.push({ id: Date.now(), subject: sub, credits: cred, score10: sc });
-                document.getElementById('grade-subject').value = '';
-                document.getElementById('grade-credits').value = '';
-                document.getElementById('grade-score').value = '';
-                saveData(); renderGrades();
-            } else { alert("Vui lòng nhập thông tin hợp lệ!"); }
-        }
-        function deleteGrade(idx) { appData.grades.splice(idx, 1); saveData(); renderGrades(); }
-
-        /* ========================
-           NOTIFICATIONS
-           ======================== */
-        function renderNotifications() {
-            const list = document.getElementById('notif-list');
-            list.innerHTML = appData.notifications.map((n, idx) => `
-                <div class="p-4 rounded-xl border ${n.isNew ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'} flex justify-between items-start gap-4 transition">
-                    <div>
-                        <h4 class="font-bold text-sm ${n.isNew ? 'text-primary' : ''}">${n.title}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">${n.text}</p>
-                    </div>
-                    <div class="flex gap-2">
-                        ${n.isNew ? `<button onclick="markReadNotif(${idx})" class="text-xs text-primary bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded hover:bg-blue-200">Đã đọc</button>` : ''}
-                        <button onclick="deleteNotif(${idx})" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                </div>
-            `).join('');
-
-            updateBadge();
-        }
-
-        function markReadNotif(idx) { appData.notifications[idx].isNew = false; saveData(); renderNotifications(); }
-        function deleteNotif(idx) { appData.notifications.splice(idx, 1); saveData(); renderNotifications(); }
+    <!-- MAIN APP SCREEN -->
+    <div v-else>
+      
+      <!-- HEADER WITH DOCTOR CARD AND SYSTEM TOGGLES -->
+      <header class="flex flex-col lg:flex-row items-center justify-between gap-4 mb-8">
         
-        function updateBadge() {
-            const newCount = appData.notifications.filter(n => n.isNew).length;
-            const badge = document.getElementById('notif-badge');
-            badge.innerText = newCount;
-            badge.style.display = newCount > 0 ? 'flex' : 'none';
-        }
+        <!-- Doctor Info Badge -->
+        <div class="cartoon-card bg-amber-100 dark:bg-slate-800 p-4 rounded-2xl w-full lg:w-auto flex items-center gap-4 relative overflow-hidden">
+          <div class="text-4xl p-2 bg-white dark:bg-slate-700 rounded-xl cartoon-card">
+            {{ doctor.avatar }}
+          </div>
+          <div class="flex-1">
+            <div class="text-xs font-bold text-rose-500 uppercase tracking-widest flex items-center gap-2">
+              <span>{{ doctor.clinicName }}</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+            <div class="text-xl font-black text-slate-800 dark:text-slate-100">Bác sĩ: {{ doctor.name }}</div>
+            <!-- Progress / Level -->
+            <div class="flex items-center gap-2 mt-1">
+              <span class="bg-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">Cấp {{ doctor.level }}</span>
+              <div class="w-32 bg-slate-200 dark:bg-slate-600 h-3.5 rounded-full overflow-hidden border border-slate-700 relative">
+                <div class="bg-gradient-to-r from-emerald-400 to-indigo-500 h-full transition-all duration-300" :style="{ width: expProgress + '%' }"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-900 dark:text-white pointer-events-none">
+                  {{ doctor.exp % 100 }}/100 EXP
+                </div>
+              </div>
+              <span class="text-xs font-bold">❤️ {{ doctor.score }} Điểm</span>
+            </div>
+          </div>
+        </div>
 
-        /* ========================
-           GLOBAL INITIALIZATION
-           ======================== */
-        function updateGlobalStats() {
-            // Update Dashboard stats directly based on array lengths
-            document.getElementById('stat-skills').innerText = appData.skills.length;
-            // Count completed questions randomly simulated for realism based on habits
-            document.getElementById('stat-questions').innerText = (1250 + appData.habits.length * 20).toLocaleString();
-            updateBadge();
-        }
+        <!-- Navigation Buttons & Dark Mode Toggle -->
+        <div class="flex flex-wrap items-center justify-center gap-2 w-full lg:w-auto">
+          <!-- Main Clinic -->
+          <button @click="currentTab = 'clinic'" 
+                  class="cartoon-btn px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm"
+                  :class="currentTab === 'clinic' ? 'bg-pink-400 text-slate-950' : 'bg-white dark:bg-slate-700'">
+            🩺 Phòng Khám
+          </button>
+          
+          <!-- Database Manager -->
+          <button @click="currentTab = 'database'" 
+                  class="cartoon-btn px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm"
+                  :class="currentTab === 'database' ? 'bg-violet-400 text-slate-950' : 'bg-white dark:bg-slate-700'">
+            📋 Quản Lý Bệnh Lý
+          </button>
 
-        window.onload = () => {
-            // Apply Theme
-            if(appData.theme === 'dark') {
-                document.documentElement.classList.add('dark');
-                document.getElementById('theme-icon').className = 'fa-solid fa-sun text-xl';
-            }
-            initNav();
-            renderDashboard();
-            initChart();
-            updateGlobalStats();
+          <!-- History & Ranks -->
+          <button @click="currentTab = 'history'" 
+                  class="cartoon-btn px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm"
+                  :class="currentTab === 'history' ? 'bg-sky-400 text-slate-950' : 'bg-white dark:bg-slate-700'">
+            🏆 Nhật Ký Khám
+          </button>
+
+          <!-- Theme Toggle Button -->
+          <button @click="toggleTheme" class="cartoon-btn p-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-900" title="Đổi màu nền">
+            <span v-if="theme === 'light'">🌙 Dark</span>
+            <span v-else>☀️ Light</span>
+          </button>
+
+          <!-- Reset Button -->
+          <button @click="showResetConfirm = true" class="cartoon-btn p-2 rounded-xl bg-red-400 text-white" title="Đặt lại tài khoản">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT TABS -->
+      <main class="grid grid-cols-1 gap-6">
+
+        <!-- ================= SECTION 1: CLINIC TAB (BỆNH NHÂN NGẪU NHIÊN) ================= -->
+        <section v-if="currentTab === 'clinic'" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Left: Patient Presentation Board (7 cols) -->
+          <div class="lg:col-span-7 flex flex-col gap-6">
+            <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl relative overflow-hidden flex-1">
+              
+              <!-- Patient Header Status -->
+              <div class="flex items-center justify-between mb-4 pb-4 border-b-2 border-dashed border-slate-300 dark:border-slate-600">
+                <span class="bg-red-100 text-red-600 text-xs font-black px-3 py-1 rounded-full border border-red-300 animate-pulse">
+                  🚨 CA BỆNH KHẨN CẤP
+                </span>
+                <span class="text-sm font-bold text-slate-500">Mã Số: #{{ activePatient.id }}</span>
+              </div>
+
+              <!-- Content: Current Patient Details -->
+              <div v-if="activePatient.symptoms" class="flex flex-col sm:flex-row gap-6 items-center">
+                
+                <!-- SVG Avatar Generator with Dynamic States -->
+                <div class="flex flex-col items-center">
+                  <div class="w-32 h-32 rounded-full border-4 border-slate-800 bg-sky-100 dark:bg-sky-900 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <!-- Sick dynamic SVG face -->
+                    <svg class="w-full h-full p-2" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <!-- Ears -->
+                      <circle cx="12" cy="50" r="10" fill="#E2E8F0" stroke="#1E293B" stroke-width="4"/>
+                      <circle cx="88" cy="50" r="10" fill="#E2E8F0" stroke="#1E293B" stroke-width="4"/>
+                      <!-- Face Base -->
+                      <circle cx="50" cy="50" r="42" :fill="getFaceColor()" stroke="#1E293B" stroke-width="4"/>
+                      
+                      <!-- Sick Blush / Fever cheeks -->
+                      <g v-if="activePatient.vitalSigns.temp >= 38.5">
+                        <circle cx="30" cy="55" r="7" fill="#F43F5E" opacity="0.6" />
+                        <circle cx="70" cy="55" r="7" fill="#F43F5E" opacity="0.6" />
+                      </g>
+                      
+                      <!-- Eyes -->
+                      <g v-if="diagnosticResult === 'wrong'">
+                        <!-- Crying or Dizzy Eyes -->
+                        <path d="M25 40 L35 50 M35 40 L25 50" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M65 40 L75 50 M75 40 L65 50" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
+                      </g>
+                      <g v-else-if="diagnosticResult === 'correct'">
+                        <!-- Happy Eyes -->
+                        <path d="M22 48 Q30 38 38 48" stroke="#1E293B" stroke-width="4" fill="none" stroke-linecap="round"/>
+                        <path d="M62 48 Q70 38 78 48" stroke="#1E293B" stroke-width="4" fill="none" stroke-linecap="round"/>
+                      </g>
+                      <g v-else>
+                        <!-- Dizzy/Sad Eyes -->
+                        <path d="M25 45 Q30 38 35 45" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <path d="M65 45 Q70 38 75 45" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <circle cx="30" cy="48" r="2.5" fill="#1E293B"/>
+                        <circle cx="70" cy="48" r="2.5" fill="#1E293B"/>
+                      </g>
+
+                      <!-- Mouth / Expression -->
+                      <g v-if="diagnosticResult === 'correct'">
+                        <!-- Happy Smile -->
+                        <path d="M38 65 Q50 78 62 65" stroke="#1E293B" stroke-width="4" fill="none" stroke-linecap="round"/>
+                      </g>
+                      <g v-else-if="diagnosticResult === 'wrong'">
+                        <!-- Crying Mouth -->
+                        <path d="M38 68 Q50 55 62 68" stroke="#1E293B" stroke-width="4" fill="none" stroke-linecap="round"/>
+                      </g>
+                      <g v-else>
+                        <!-- Sad / Squiggly line -->
+                        <path d="M40 65 Q45 60 50 65 T60 65" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <!-- Fever Thermometer in Mouth -->
+                        <line x1="50" y1="65" x2="25" y2="78" stroke="#64748B" stroke-width="5" stroke-linecap="round"/>
+                        <circle cx="23" cy="79" r="3" fill="#EF4444"/>
+                      </g>
+                    </svg>
+
+                    <!-- Cute bandage on head or face -->
+                    <div class="absolute top-2 left-6 bg-yellow-200 border-2 border-slate-800 text-[8px] font-black px-1 rounded rotate-[-12deg]">
+                      🩹 ICE
+                    </div>
+                  </div>
+
+                  <!-- Patient Demographics Badge -->
+                  <div class="mt-4 text-center">
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-1">
+                      <span>{{ activePatient.name }}</span>
+                      <span class="text-base text-pink-500" v-if="activePatient.gender === 'Nữ'"><i class="fa-solid fa-venus"></i></span>
+                      <span class="text-base text-sky-500" v-else><i class="fa-solid fa-mars"></i></span>
+                    </h3>
+                    <p class="text-xs font-bold text-slate-500 mt-1">
+                      {{ activePatient.age }} tuổi &bull; Giới tính {{ activePatient.gender }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Patient Clinical Presentation -->
+                <div class="flex-1 space-y-4">
+                  <!-- Vital signs badges -->
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="p-2.5 bg-rose-50 dark:bg-slate-700 rounded-xl border-2 border-slate-800 flex items-center gap-2">
+                      <span class="text-xl">🌡️</span>
+                      <div>
+                        <div class="text-[10px] text-slate-500 font-bold leading-tight">Thân Nhiệt</div>
+                        <div class="text-sm font-black" :class="activePatient.vitalSigns.temp >= 38.5 ? 'text-rose-500' : 'text-slate-700 dark:text-slate-200'">
+                          {{ activePatient.vitalSigns.temp }}°C
+                        </div>
+                      </div>
+                    </div>
+                    <div class="p-2.5 bg-indigo-50 dark:bg-slate-700 rounded-xl border-2 border-slate-800 flex items-center gap-2">
+                      <span class="text-xl">💓</span>
+                      <div>
+                        <div class="text-[10px] text-slate-500 font-bold leading-tight">Nhịp Tim</div>
+                        <div class="text-sm font-black text-indigo-500">
+                          {{ activePatient.vitalSigns.heartRate }} bpm
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Symptom Box -->
+                  <div class="p-4 bg-amber-50 dark:bg-slate-700 rounded-2xl border-2 border-slate-800">
+                    <h4 class="text-sm font-black text-amber-700 dark:text-amber-300 flex items-center gap-1.5 mb-2">
+                      <span>🩺 Triệu Chứng Lâm Sàng:</span>
+                    </h4>
+                    <p class="text-base font-bold italic text-slate-800 dark:text-slate-100">
+                      "{{ activePatient.symptoms }}"
+                    </p>
+                  </div>
+
+                  <!-- Quick Hint Feature -->
+                  <div class="flex items-center gap-2">
+                    <button @click="revealHint" class="text-xs text-indigo-500 hover:text-indigo-600 font-bold flex items-center gap-1">
+                      <i class="fa-regular fa-lightbulb"></i>
+                      <span>Gợi ý chẩn đoán ({{ hintsUsed }} lần dùng)</span>
+                    </button>
+                    <span v-if="showHint" class="text-xs bg-amber-100 text-amber-800 font-semibold px-2 py-1 rounded">
+                      Gợi ý từ khóa: <strong>{{ activePatient.diagnosisHint }}</strong>
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Action Zone: Random Next Patient Button -->
+              <div class="mt-8 flex justify-center">
+                <button @click="nextPatient" class="cartoon-btn px-6 py-4 bg-rose-400 hover:bg-rose-500 text-slate-950 font-black text-lg rounded-2xl flex items-center gap-2 animate-pulse">
+                  <span>Khám Bệnh Nhân Tiếp Theo</span> 🧑‍⚕️✨
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right: Diagnostic & Score Board (5 cols) -->
+          <div class="lg:col-span-5 flex flex-col gap-6">
             
-            // Re-calc GPA for dashboard
-            let tC = 0, tP = 0;
-            appData.grades.forEach(g => { tC += g.credits; tP += convertToGPA4(g.score10) * g.credits; });
-            document.getElementById('stat-gpa').innerText = tC > 0 ? (tP/tC).toFixed(2) : "0.00";
+            <!-- Diagnosis Input and Submit Card -->
+            <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl flex-1">
+              <h2 class="text-2xl font-black mb-4 flex items-center gap-2 text-rose-500">
+                📝 Chẩn Đoán Của Bạn
+              </h2>
+
+              <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Hãy nhập chẩn đoán cho ca bệnh bên cạnh. Bạn có thể chọn từ gợi ý hoặc tự nhập tên bệnh chuẩn xác nhất.
+              </p>
+
+              <!-- Diagnostic input space -->
+              <div class="space-y-4 relative">
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nhập tên bệnh lý:</label>
+                  <input type="text" v-model="studentDiagnosis" @input="showSuggestions = true"
+                         placeholder="Ví dụ: Đau mắt đỏ, Cảm cúm..." 
+                         class="w-full px-4 py-3 input-cartoon bg-slate-50 dark:bg-slate-700 text-base font-bold"
+                         :disabled="diagnosticResult !== null">
+
+                  <!-- Autosuggest list -->
+                  <div v-if="showSuggestions && filteredDiagnoses.length && diagnosticResult === null" 
+                       class="absolute z-10 w-full bg-white dark:bg-slate-800 border-2 border-slate-800 rounded-xl mt-1 max-h-40 overflow-y-auto shadow-lg">
+                    <div v-for="diag in filteredDiagnoses" :key="diag" 
+                         @click="selectDiagnosis(diag)"
+                         class="p-2 hover:bg-rose-100 dark:hover:bg-slate-700 cursor-pointer font-semibold text-sm">
+                      ✨ {{ diag }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Grading Buttons -->
+                <div class="flex gap-2">
+                  <button @click="submitDiagnosis" 
+                          :disabled="!studentDiagnosis || diagnosticResult !== null"
+                          class="cartoon-btn flex-1 py-3 bg-emerald-400 hover:bg-emerald-500 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-extrabold text-base rounded-2xl">
+                    🔥 Nộp Đáp Án & Chấm Điểm
+                  </button>
+                </div>
+              </div>
+
+              <!-- Grading feedback result (Vui vẻ, sinh động) -->
+              <div v-if="diagnosticResult" class="mt-6 p-4 rounded-2xl border-4 transition-all"
+                   :class="diagnosticResult === 'correct' ? 'bg-emerald-100 border-emerald-500 text-emerald-950' : 'bg-red-100 border-red-500 text-red-950'">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="text-3xl" v-if="diagnosticResult === 'correct'">🎉</span>
+                  <span class="text-3xl" v-else>😢</span>
+                  <div>
+                    <h3 class="font-extrabold text-lg">
+                      {{ diagnosticResult === 'correct' ? 'CHẨN ĐOÁN HOÀN HẢO!' : 'CHƯA CHÍNH XÁC RỒI!' }}
+                    </h3>
+                    <p class="text-xs font-bold opacity-80" v-if="diagnosticResult === 'correct'">+20 EXP &amp; Thêm điểm danh tiếng</p>
+                    <p class="text-xs font-bold opacity-80" v-else>Hãy thử lại hoặc học thêm kiến thức nhé!</p>
+                  </div>
+                </div>
+                
+                <div class="text-sm font-bold space-y-1">
+                  <div>👨‍⚕️ Đáp án chính xác: <span class="underline text-indigo-600">{{ activePatient.correctDiagnosis }}</span></div>
+                  <div class="mt-2 text-xs italic bg-white dark:bg-slate-900 bg-opacity-70 p-2 rounded-lg">
+                    💡 <strong>Mẹo lâm sàng:</strong> {{ activePatient.treatmentPlan || 'Hãy luôn khám kỹ lâm sàng.' }}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Fun facts / Dr. Profile Snapshot -->
+            <div class="cartoon-card bg-emerald-100 dark:bg-slate-800 p-4 rounded-3xl">
+              <h3 class="text-sm font-black text-emerald-800 dark:text-emerald-300 mb-2">📊 KẾT QUẢ CỦA PHÒNG KHÁM:</h3>
+              <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-white dark:bg-slate-700 p-2 rounded-xl border border-slate-700">
+                  <div class="text-lg font-black text-emerald-500">{{ stats.treated }}</div>
+                  <div class="text-[9px] font-bold text-slate-500 uppercase">Bệnh nhân</div>
+                </div>
+                <div class="bg-white dark:bg-slate-700 p-2 rounded-xl border border-slate-700">
+                  <div class="text-lg font-black text-indigo-500">{{ stats.correct }}</div>
+                  <div class="text-[9px] font-bold text-slate-500 uppercase">Thành công</div>
+                </div>
+                <div class="bg-white dark:bg-slate-700 p-2 rounded-xl border border-slate-700">
+                  <div class="text-lg font-black text-rose-500">{{ stats.successRate }}%</div>
+                  <div class="text-[9px] font-bold text-slate-500 uppercase">Tỷ lệ đúng</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ================= SECTION 2: TEMPLATE MANAGER (THÊM, SỬA, XOÁ BỆNH LÝ) ================= -->
+        <section v-if="currentTab === 'database'" class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b-2 border-dashed border-slate-200 dark:border-slate-700">
+            <div>
+              <h2 class="text-2xl font-black text-violet-500">📋 Quản Lý Danh Mục Bệnh Lý</h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Nơi bạn có thể Thêm, Sửa hoặc Xoá các kịch bản bệnh nhân ngẫu nhiên xuất hiện trong phòng khám.</p>
+            </div>
+            
+            <button @click="openModal('add')" class="cartoon-btn px-4 py-2 bg-emerald-400 hover:bg-emerald-500 text-slate-950 font-bold text-sm rounded-xl flex items-center gap-1.5 self-stretch sm:self-auto text-center justify-center">
+              <i class="fa-solid fa-plus"></i>
+              <span>Thêm Ca Bệnh Mới</span>
+            </button>
+          </div>
+
+          <!-- Table/List of Symptoms & Diagnoses -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr class="bg-violet-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black uppercase">
+                  <th class="p-3 rounded-l-xl">Tên Bệnh</th>
+                  <th class="p-3">Triệu chứng lâm sàng tiêu biểu</th>
+                  <th class="p-3">Từ khóa gợi ý</th>
+                  <th class="p-3">Ghi chú & Phác đồ điều trị</th>
+                  <th class="p-3 text-center rounded-r-xl w-28">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-sm font-semibold">
+                <tr v-for="(item, index) in customCases" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                  <td class="p-3 font-bold text-indigo-600 dark:text-indigo-400">{{ item.correctDiagnosis }}</td>
+                  <td class="p-3 text-slate-600 dark:text-slate-300 truncate max-w-xs">{{ item.symptoms }}</td>
+                  <td class="p-3"><span class="bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 rounded text-xs text-amber-700">{{ item.diagnosisHint }}</span></td>
+                  <td class="p-3 text-slate-500 dark:text-slate-400 truncate max-w-xs">{{ item.treatmentPlan || 'N/A' }}</td>
+                  <td class="p-3">
+                    <div class="flex items-center justify-center gap-1">
+                      <button @click="openModal('edit', index)" class="p-1.5 text-sky-500 hover:bg-sky-50 rounded" title="Sửa">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                      <button @click="deleteCase(index)" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded" title="Xoá">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Fallback if empty -->
+          <div v-if="!customCases.length" class="text-center py-10">
+            <p class="text-slate-500 font-bold mb-2">Chưa có ca bệnh lý nào trong danh sách!</p>
+            <button @click="resetToDefaultCases" class="text-indigo-500 underline font-black">Khôi phục danh sách mặc định</button>
+          </div>
+
+        </section>
+
+        <!-- ================= SECTION 3: HISTORY & STATS TAB ================= -->
+        <section v-if="currentTab === 'history'" class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl">
+          <div class="flex items-center justify-between pb-4 mb-4 border-b-2 border-dashed border-slate-200 dark:border-slate-700">
+            <div>
+              <h2 class="text-2xl font-black text-sky-500">🏆 Nhật Ký Khám Bệnh & Thành Tích</h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Danh sách các ca lâm sàng bạn đã từng thăm khám thực tế tại bệnh viện.</p>
+            </div>
+            <button @click="clearHistory" class="text-xs text-rose-500 hover:underline font-bold">Xoá toàn bộ nhật ký</button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="p-4 rounded-2xl bg-teal-50 dark:bg-slate-700/50 border-2 border-slate-800 flex items-center gap-3">
+              <span class="text-3xl">🎖️</span>
+              <div>
+                <div class="text-xs font-bold text-slate-500">Danh Hiệu Bác Sĩ</div>
+                <div class="text-lg font-black text-teal-600 dark:text-teal-400">{{ getDoctorTitle() }}</div>
+              </div>
+            </div>
+            <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-slate-700/50 border-2 border-slate-800 flex items-center gap-3">
+              <span class="text-3xl">🔥</span>
+              <div>
+                <div class="text-xs font-bold text-slate-500">Kỷ Lục Chẩn Đoán Đúng</div>
+                <div class="text-lg font-black text-indigo-600 dark:text-indigo-400">{{ stats.correct }} / {{ stats.treated }} Ca</div>
+              </div>
+            </div>
+            <div class="p-4 rounded-2xl bg-rose-50 dark:bg-slate-700/50 border-2 border-slate-800 flex items-center gap-3">
+              <span class="text-3xl">💡</span>
+              <div>
+                <div class="text-xs font-bold text-slate-500">Trợ Giúp Đã Sử Dụng</div>
+                <div class="text-lg font-black text-rose-600 dark:text-rose-400">{{ hintsUsed }} lần gợi ý</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- List of history events -->
+          <div class="space-y-3">
+            <div v-for="log in sortedHistory" :key="log.time" class="p-4 rounded-2xl border-2 border-slate-800 bg-slate-50 dark:bg-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl" v-if="log.success">💚</span>
+                <span class="text-2xl" v-else>💔</span>
+                <div>
+                  <div class="font-extrabold text-sm sm:text-base">Bệnh nhân: {{ log.patientName }} ({{ log.patientAge }}t)</div>
+                  <div class="text-xs text-slate-500">
+                    Bệnh chuẩn: <span class="text-emerald-500 font-bold">{{ log.correctDiagnosis }}</span> &bull; 
+                    Nhập chẩn đoán: <span class="font-bold" :class="log.success ? 'text-emerald-500' : 'text-rose-500'">"{{ log.studentInput }}"</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right self-end sm:self-auto">
+                <span class="text-xs font-bold text-slate-400 block">{{ formatTime(log.time) }}</span>
+                <span class="inline-block mt-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full"
+                      :class="log.success ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+                  {{ log.success ? '+20 EXP' : '0 EXP' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Empty history -->
+            <div v-if="!history.length" class="text-center py-10">
+              <span class="text-4xl block mb-2">📭</span>
+              <p class="text-slate-500 font-bold">Chưa khám ca bệnh nào cả. Hãy sang Phòng Khám để đón bệnh nhân đầu tiên!</p>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="mt-12 text-center text-xs font-bold text-slate-400 dark:text-slate-500 pb-6">
+        <div>🏥 Phòng Khám Siêu Cấp Nhí Nhố &copy; 2026</div>
+        <div class="mt-1 text-[10px]">Tối ưu hóa riêng tư, an toàn dữ liệu được lưu cục bộ trên trình duyệt của bạn.</div>
+      </footer>
+
+    </div>
+
+    <!-- ================= ADD / EDIT MEDICAL CASE MODAL ================= -->
+    <div v-if="modal.show" class="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl max-w-lg w-full relative animate-in fade-in zoom-in duration-200">
+        <h3 class="text-xl font-black mb-4 flex items-center gap-2 text-violet-500">
+          <span>{{ modal.mode === 'add' ? '✨ Tạo Mới Ca Bệnh' : '✍️ Chỉnh Sửa Ca Bệnh' }}</span>
+        </h3>
+
+        <!-- Form fields -->
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Chẩn Đoán Đúng (Tên bệnh chính xác):</label>
+            <input type="text" v-model="modal.form.correctDiagnosis" placeholder="Ví dụ: Đau mắt đỏ" class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Triệu Chứng Mô Tả:</label>
+            <textarea v-model="modal.form.symptoms" rows="3" placeholder="Mắt đỏ hoe, nhiều ghèn nhầy, ngứa rát kinh khủng..." class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 mb-1">Từ Khoá Gợi Ý (Dễ đoán):</label>
+              <input type="text" v-model="modal.form.diagnosisHint" placeholder="Ví dụ: Đau mắt" class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 mb-1">Lứa tuổi thường gặp:</label>
+              <select v-model="modal.form.ageGroup" class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold">
+                <option value="Trẻ em">Trẻ em (1-10 tuổi)</option>
+                <option value="Thanh niên">Thanh niên (15-30 tuổi)</option>
+                <option value="Người lớn">Người lớn (30+ tuổi)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Lời khuyên / Phác Đồ Điều Trị (Mẹo lâm sàng):</label>
+            <input type="text" v-model="modal.form.treatmentPlan" placeholder="Ví dụ: Nhỏ nước muối sinh lý, tránh chạm tay bẩn..." class="w-full px-3 py-2 input-cartoon text-sm bg-slate-50 dark:bg-slate-700 font-bold">
+          </div>
+        </div>
+
+        <div class="flex gap-2 mt-6">
+          <button @click="modal.show = false" class="cartoon-btn flex-1 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-black text-sm rounded-xl">
+            Hủy Bỏ
+          </button>
+          <button @click="saveModal" class="cartoon-btn flex-1 py-2 bg-violet-400 hover:bg-violet-500 text-slate-950 font-black text-sm rounded-xl">
+            Lưu Lại
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= RESET SYSTEM CONFIRMATION MODAL ================= -->
+    <div v-if="showResetConfirm" class="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="cartoon-card bg-white dark:bg-slate-800 p-6 rounded-3xl max-w-sm w-full text-center">
+        <span class="text-4xl block mb-2">⚠️</span>
+        <h3 class="text-lg font-black text-rose-500 mb-2">Đồng Ý Đặt Lại Trực Tuyến?</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-300 mb-6">Mọi tiến độ, dữ liệu bệnh án tự tạo và thẻ bác sĩ của bạn sẽ bị xoá vĩnh viễn.</p>
+        
+        <div class="flex gap-2">
+          <button @click="showResetConfirm = false" class="cartoon-btn flex-1 py-2 bg-slate-200 dark:bg-slate-700 font-bold text-sm rounded-xl">Hủy</button>
+          <button @click="resetAllProgress" class="cartoon-btn flex-1 py-2 bg-rose-500 text-white font-bold text-sm rounded-xl">Xác Nhận Xoá</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+
+    // Default template cases for clinical matching (100% Vietnamese content)
+    const DEFAULT_CASES = [
+      {
+        id: '1',
+        correctDiagnosis: 'Cảm cúm siêu cấp',
+        symptoms: 'Thường xuyên nhảy mũi hắt xì văng cả cầu vồng, thân nhiệt nóng như núi lửa, hay chảy nước mũi và mỏi mệt cơ thể.',
+        diagnosisHint: 'Cúm',
+        ageGroup: 'Trẻ em',
+        treatmentPlan: 'Nên uống nhiều nước ấm, nghỉ ngơi tại giường ngủ và cách ly với thú cưng để tránh lây bệnh.'
+      },
+      {
+        id: '2',
+        correctDiagnosis: 'Hội chứng thèm trà sữa bẩm sinh',
+        symptoms: 'Chân tay run rẩy nếu không có trân châu, tinh thần lờ đờ uể oải suốt cả ngày, tỉnh bừng mắt khi nghe tiếng hút rột rột.',
+        diagnosisHint: 'Trà sữa',
+        ageGroup: 'Thanh niên',
+        treatmentPlan: 'Kê đơn giảm liều ngọt dần, uống trà mộc để giải độc bớt cơn cuồng đường.'
+      },
+      {
+        id: '3',
+        correctDiagnosis: 'Đau ruột thừa cấp tính',
+        symptoms: 'Đau nhức dữ dội ở hố chậu bụng dưới bên phải, sốt nhẹ, dáng đi lom khom đau râm ran tăng tiến cực độ.',
+        diagnosisHint: 'Ruột thừa',
+        ageGroup: 'Thanh niên',
+        treatmentPlan: 'Đây là tình trạng cấp cứu ngoại khoa! Vui lòng chuyển bệnh nhân ngay đến bệnh viện mổ cắt ruột thừa khẩn cấp.'
+      },
+      {
+        id: '4',
+        correctDiagnosis: 'Hội chứng cú đêm quầng mắt gấu trúc',
+        symptoms: 'Ngủ ngày cày đêm, thức trắng tới 3 giờ sáng không chợp mắt, xung quanh bọng mắt có vòng quầng thâm xám đen.',
+        diagnosisHint: 'Mất ngủ',
+        ageGroup: 'Thanh niên',
+        treatmentPlan: 'Tránh sử dụng điện thoại trước giờ ngủ 1 tiếng, uống 1 cốc sữa ấm để dễ đi sâu vào giấc ngủ lành mạnh.'
+      },
+      {
+        id: '5',
+        correctDiagnosis: 'Bệnh đau mắt đỏ rực',
+        symptoms: 'Lòng trắng mắt xung huyết đỏ au như quả cà chua chín, nhiều dỉ mắt nhầy dính rát ngứa ngáy khó chịu.',
+        diagnosisHint: 'Mắt đỏ',
+        ageGroup: 'Trẻ em',
+        treatmentPlan: 'Dùng riêng khăn mặt, nhỏ dung dịch nước muối sinh lý thường xuyên để sát khuẩn nhẹ dịu.'
+      },
+      {
+        id: '6',
+        correctDiagnosis: 'Say nắng mệt lả',
+        symptoms: 'Vừa đi học ngoài nắng nóng cực độ về, chóng mặt xây xẩm mặt mày, da nóng ran đỏ bừng, mệt mỏi rã rời cơ thể.',
+        diagnosisHint: 'Say nắng',
+        ageGroup: 'Trẻ em',
+        treatmentPlan: 'Uống dung dịch oresol, nới lỏng trang phục và hạ mát cơ thể ở chỗ thoáng gió.'
+      }
+    ];
+
+    // Dummy Vietnamese first & last names to generate random cute patient names
+    const PATIENT_NAMES = [
+      'Bé Thỏ Bông', 'Bạn Gấu Ú', 'Anh Khỉ Còi', 'Cô Sóc Nhỏ', 'Bé Na Chạy Nhanh',
+      'Đậu Đậu', 'Su Su', 'Bánh Mì', 'Kem Dâu', 'Cà Phê', 'Hạt Dẻ', 'Bé Heo Hồng'
+    ];
+
+    // Sounds generator using Web Audio API (totally self-contained)
+    class CuteSoundEffects {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+      playPop() {
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.15);
+        
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+        
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.15);
+      }
+      playCorrect() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const playTone = (freq, start, duration) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, start);
+          gain.gain.setValueAtTime(0.1, start);
+          gain.gain.exponentialRampToValueAtTime(0.01, start + duration);
+          osc.start(start);
+          osc.stop(start + duration);
+        };
+        playTone(523.25, now, 0.1); // C5
+        playTone(659.25, now + 0.08, 0.1); // E5
+        playTone(783.99, now + 0.16, 0.15); // G5
+        playTone(1046.50, now + 0.24, 0.25); // C6
+      }
+      playWrong() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(90, now + 0.4);
+        
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+        
+        osc.start();
+        osc.stop(now + 0.4);
+      }
+    }
+
+    const sound = new CuteSoundEffects();
+
+    createApp({
+      setup() {
+        // Theme state
+        const theme = ref(localStorage.getItem('theme') || 'light');
+
+        // Onboarding form state
+        const onboarding = ref({
+          name: '',
+          clinicName: '',
+          avatar: '🐱'
+        });
+
+        const avatars = ['🐱', '🐰', '🐼', '🦊', '🐷', '🦁'];
+
+        // Core Doctor state
+        const doctor = ref({
+          name: localStorage.getItem('dr_name') || '',
+          clinicName: localStorage.getItem('dr_clinic') || '',
+          avatar: localStorage.getItem('dr_avatar') || '🐱',
+          level: parseInt(localStorage.getItem('dr_level') || '1'),
+          exp: parseInt(localStorage.getItem('dr_exp') || '0'),
+          score: parseInt(localStorage.getItem('dr_score') || '0')
+        });
+
+        // Tabs
+        const currentTab = ref('clinic'); // clinic, database, history
+
+        // Cases & custom changes
+        const customCases = ref([]);
+
+        // Active patient in clinic
+        const activePatient = ref({
+          id: '',
+          name: '',
+          age: 0,
+          gender: 'Nữ',
+          symptoms: '',
+          diagnosisHint: '',
+          correctDiagnosis: '',
+          treatmentPlan: '',
+          vitalSigns: { temp: 37.0, heartRate: 80 }
+        });
+
+        // Student's dynamic diagnosis inputs
+        const studentDiagnosis = ref('');
+        const showSuggestions = ref(false);
+        const showHint = ref(false);
+        const hintsUsed = ref(parseInt(localStorage.getItem('hints_used') || '0'));
+        const diagnosticResult = ref(null); // null, 'correct', 'wrong'
+
+        // History logs
+        const history = ref([]);
+
+        // Modals management
+        const modal = ref({
+          show: false,
+          mode: 'add', // add, edit
+          index: -1,
+          form: {
+            correctDiagnosis: '',
+            symptoms: '',
+            diagnosisHint: '',
+            ageGroup: 'Trẻ em',
+            treatmentPlan: ''
+          }
+        });
+
+        const showResetConfirm = ref(false);
+
+        // Computed: Progress bar percentage for EXP
+        const expProgress = computed(() => {
+          return doctor.value.exp % 100;
+        });
+
+        // Computed: Filter auto-suggest diagnosis based on what student is typing
+        const filteredDiagnoses = computed(() => {
+          if (!studentDiagnosis.value) return [];
+          const query = studentDiagnosis.value.toLowerCase().trim();
+          return customCases.value
+            .map(c => c.correctDiagnosis)
+            .filter(name => name.toLowerCase().includes(query));
+        });
+
+        // Computed: Overall clinic stats
+        const stats = computed(() => {
+          const treated = history.value.length;
+          const correct = history.value.filter(h => h.success).length;
+          const successRate = treated > 0 ? Math.round((correct / treated) * 100) : 0;
+          return { treated, correct, successRate };
+        });
+
+        // Computed: Sorted logs (Latest first)
+        const sortedHistory = computed(() => {
+          return [...history.value].sort((a, b) => b.time - a.time);
+        });
+
+        // Watchers to auto-persist doctor profile changes
+        watch(doctor, (newVal) => {
+          localStorage.setItem('dr_name', newVal.name);
+          localStorage.setItem('dr_clinic', newVal.clinicName);
+          localStorage.setItem('dr_avatar', newVal.avatar);
+          localStorage.setItem('dr_level', newVal.level.toString());
+          localStorage.setItem('dr_exp', newVal.exp.toString());
+          localStorage.setItem('dr_score', newVal.score.toString());
+        }, { deep: true });
+
+        // Watchers to persist custom cases & history logs
+        watch(customCases, (newVal) => {
+          localStorage.setItem('custom_cases', JSON.stringify(newVal));
+        }, { deep: true });
+
+        watch(history, (newVal) => {
+          localStorage.setItem('clinic_history', JSON.stringify(newVal));
+        }, { deep: true });
+
+        watch(hintsUsed, (newVal) => {
+          localStorage.setItem('hints_used', newVal.toString());
+        });
+
+        onMounted(() => {
+          // Dark Mode initialization
+          document.documentElement.classList.toggle('dark', theme.value === 'dark');
+
+          // Load custom cases if exists, otherwise load default templates
+          const savedCases = localStorage.getItem('custom_cases');
+          if (savedCases) {
+            customCases.value = JSON.parse(savedCases);
+          } else {
+            customCases.value = [...DEFAULT_CASES];
+            localStorage.setItem('custom_cases', JSON.stringify(DEFAULT_CASES));
+          }
+
+          // Load history
+          const savedHistory = localStorage.getItem('clinic_history');
+          if (savedHistory) {
+            history.value = JSON.parse(savedHistory);
+          }
+
+          // Generate first patient if Doctor profile already setup
+          if (doctor.value.name) {
+            nextPatient();
+          }
+        });
+
+        // Methods
+        const toggleTheme = () => {
+          theme.value = theme.value === 'light' ? 'dark' : 'light';
+          localStorage.setItem('theme', theme.value);
+          document.documentElement.classList.toggle('dark', theme.value === 'dark');
         };
 
-    </script>
+        const setupDoctor = () => {
+          if (!onboarding.value.name.trim()) {
+            alert("Vui lòng điền tên Bác Sĩ của bạn nhé!");
+            return;
+          }
+          if (!onboarding.value.clinicName.trim()) {
+            onboarding.value.clinicName = "Bệnh Viện Cầu Vồng Nhỏ";
+          }
+          doctor.value.name = onboarding.value.name;
+          doctor.value.clinicName = onboarding.value.clinicName;
+          doctor.value.avatar = onboarding.value.avatar;
+          
+          sound.playPop();
+          nextPatient();
+        };
+
+        // Generates dynamic SVG sick avatar colors
+        const getFaceColor = () => {
+          if (diagnosticResult.value === 'correct') return '#C6F6D5'; // Green healthy
+          if (diagnosticResult.value === 'wrong') return '#FED7D7'; // Red pale/sick
+          if (activePatient.value.vitalSigns.temp >= 38.5) return '#FED7D7'; // Fever red face
+          return '#FEFCBF'; // Pale yellow/green face
+        };
+
+        // Patient Generator algorithm (Purely matched dynamically)
+        const nextPatient = () => {
+          sound.playPop();
+          diagnosticResult.value = null;
+          studentDiagnosis.value = '';
+          showHint.value = false;
+          showSuggestions.value = false;
+
+          if (!customCases.value.length) {
+            alert("Vui lòng thêm ít nhất một bệnh lý mẫu trước khi tiếp tục khám nhé!");
+            return;
+          }
+
+          // Pick random template from current custom cases pool
+          const randomTemplate = customCases.value[Math.floor(Math.random() * customCases.value.length)];
+          
+          // Pick age based on template ageGroup preference
+          let patientAge = 5;
+          if (randomTemplate.ageGroup === 'Trẻ em') {
+            patientAge = Math.floor(Math.random() * 9) + 2; // 2-10
+          } else if (randomTemplate.ageGroup === 'Thanh niên') {
+            patientAge = Math.floor(Math.random() * 15) + 16; // 16-30
+          } else {
+            patientAge = Math.floor(Math.random() * 40) + 31; // 31-70
+          }
+
+          // Generate random vital signs depending on sickness
+          let temp = (Math.random() * 1.5 + 36.5).toFixed(1);
+          if (randomTemplate.correctDiagnosis.toLowerCase().includes('cúm') || 
+              randomTemplate.correctDiagnosis.toLowerCase().includes('say nắng') || 
+              randomTemplate.correctDiagnosis.toLowerCase().includes('viêm')) {
+            temp = (Math.random() * 2.1 + 38.2).toFixed(1); // Fever temp
+          }
+          
+          const heartRate = Math.floor(Math.random() * 35) + 75; // 75-110
+
+          // Formulate current active patient
+          activePatient.value = {
+            id: Math.floor(1000 + Math.random() * 9000).toString(),
+            name: PATIENT_NAMES[Math.floor(Math.random() * PATIENT_NAMES.length)],
+            age: patientAge,
+            gender: Math.random() > 0.5 ? 'Nữ' : 'Nam',
+            symptoms: randomTemplate.symptoms,
+            diagnosisHint: randomTemplate.diagnosisHint,
+            correctDiagnosis: randomTemplate.correctDiagnosis,
+            treatmentPlan: randomTemplate.treatmentPlan,
+            vitalSigns: { temp, heartRate }
+          };
+        };
+
+        const selectDiagnosis = (diag) => {
+          studentDiagnosis.value = diag;
+          showSuggestions.value = false;
+        };
+
+        const revealHint = () => {
+          showHint.value = true;
+          hintsUsed.value += 1;
+        };
+
+        // Smart diagnosis grading check
+        const submitDiagnosis = () => {
+          if (!studentDiagnosis.value.trim() || diagnosticResult.value !== null) return;
+
+          const cleanedInput = cleanText(studentDiagnosis.value);
+          const cleanedCorrect = cleanText(activePatient.value.correctDiagnosis);
+          const cleanedHint = cleanText(activePatient.value.diagnosisHint);
+
+          // Matching criteria: Exact matching or containing key clinical keyword hints
+          const isCorrect = cleanedInput.includes(cleanedCorrect) || 
+                            cleanedInput.includes(cleanedHint) ||
+                            cleanedCorrect.includes(cleanedInput);
+
+          if (isCorrect) {
+            diagnosticResult.value = 'correct';
+            doctor.value.score += 20;
+            doctor.value.exp += 20;
+            
+            // Check level up
+            if (doctor.value.exp >= doctor.value.level * 100) {
+              doctor.value.level += 1;
+              confetti({
+                particleCount: 150,
+                spread: 80,
+                origin: { y: 0.6 }
+              });
+            }
+            
+            sound.playCorrect();
+            confetti({
+              particleCount: 50,
+              spread: 60,
+              origin: { y: 0.8 }
+            });
+          } else {
+            diagnosticResult.value = 'wrong';
+            sound.playWrong();
+          }
+
+          // Push into the medical clinic logs history
+          history.value.push({
+            patientName: activePatient.value.name,
+            patientAge: activePatient.value.age,
+            correctDiagnosis: activePatient.value.correctDiagnosis,
+            studentInput: studentDiagnosis.value.trim(),
+            success: isCorrect,
+            time: Date.now()
+          });
+        };
+
+        // Helper helper function to normalize Vietnamese strings (ignoring case & accents)
+        const cleanText = (str) => {
+          return str
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // Remove accents
+            .replace(/đ/g, "d")
+            .replace(/[^a-z0-9 ]/g, "")
+            .trim();
+        };
+
+        // Database CRUD Operations (Thêm, Sửa, Xoá)
+        const openModal = (mode, index = -1) => {
+          modal.value.show = true;
+          modal.value.mode = mode;
+          modal.value.index = index;
+
+          if (mode === 'add') {
+            modal.value.form = {
+              correctDiagnosis: '',
+              symptoms: '',
+              diagnosisHint: '',
+              ageGroup: 'Trẻ em',
+              treatmentPlan: ''
+            };
+          } else {
+            const data = customCases.value[index];
+            modal.value.form = { ...data };
+          }
+        };
+
+        const saveModal = () => {
+          const f = modal.value.form;
+          if (!f.correctDiagnosis.trim() || !f.symptoms.trim() || !f.diagnosisHint.trim()) {
+            alert("Vui lòng điền đầy đủ Tên bệnh, Triệu chứng lâm sàng và Gợi ý nhé!");
+            return;
+          }
+
+          if (modal.value.mode === 'add') {
+            customCases.value.push({
+              id: Date.now().toString(),
+              ...f
+            });
+          } else {
+            customCases.value[modal.value.index] = {
+              ...customCases.value[modal.value.index],
+              ...f
+            };
+          }
+
+          modal.value.show = false;
+          sound.playPop();
+        };
+
+        const deleteCase = (index) => {
+          if (confirm(`Bạn chắc chắn muốn xoá bệnh lý "${customCases.value[index].correctDiagnosis}" khỏi danh sách?`)) {
+            customCases.value.splice(index, 1);
+            sound.playWrong();
+          }
+        };
+
+        const resetToDefaultCases = () => {
+          customCases.value = [...DEFAULT_CASES];
+        };
+
+        // Utility: doctor cute ranking titles
+        const getDoctorTitle = () => {
+          const lvl = doctor.value.level;
+          if (lvl >= 10) return "🩺 Giáo Sư Viện Trưởng Siêu Cấp";
+          if (lvl >= 7) return "🌟 Thần Y Gấu Trúc Trưởng Khoa";
+          if (lvl >= 4) return "🎒 Bác Sĩ Nội Trú Chăm Chỉ";
+          return "🍼 Bác Sĩ Tập Sự Nhí Nhố";
+        };
+
+        const clearHistory = () => {
+          if (confirm("Xoá sạch lịch sử khám chữa bệnh?")) {
+            history.value = [];
+          }
+        };
+
+        const formatTime = (timestamp) => {
+          const date = new Date(timestamp);
+          return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} - ${date.getDate()}/${date.getMonth()+1}`;
+        };
+
+        const resetAllProgress = () => {
+          localStorage.clear();
+          location.reload();
+        };
+
+        return {
+          theme,
+          onboarding,
+          avatars,
+          doctor,
+          currentTab,
+          customCases,
+          activePatient,
+          studentDiagnosis,
+          showSuggestions,
+          showHint,
+          hintsUsed,
+          diagnosticResult,
+          history,
+          modal,
+          showResetConfirm,
+          expProgress,
+          filteredDiagnoses,
+          stats,
+          sortedHistory,
+          toggleTheme,
+          setupDoctor,
+          getFaceColor,
+          nextPatient,
+          selectDiagnosis,
+          revealHint,
+          submitDiagnosis,
+          openModal,
+          saveModal,
+          deleteCase,
+          resetToDefaultCases,
+          getDoctorTitle,
+          clearHistory,
+          formatTime,
+          resetAllProgress
+        };
+      }
+    }).mount('#app');
+  </script>
+
 </body>
 </html>
