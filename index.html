@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedMaster Pro - Hệ thống Học tập Y khoa</title>
+    <title>MedMaster Pro v3 - Hệ thống Học tập Y khoa Toàn diện</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,135 +18,154 @@
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; transition: all 0.3s ease; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: all 0.2s ease; }
         .tab-content { display: none; }
-        .tab-content.active { display: block; animation: slideUp 0.4s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .sidebar-item.active { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
-        .dark .glass { background: rgba(30, 41, 59, 0.8); }
+        .tab-content.active { display: block; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .sidebar-item.active { background: #2563eb; color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
+        .dark .glass { background: rgba(15, 23, 42, 0.85); }
     </style>
 </head>
-<body class="bg-secondary text-slate-800 dark:bg-darkbg dark:text-slate-200">
+<body class="bg-secondary text-slate-800 dark:bg-darkbg dark:text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
 
     <aside id="sidebar" class="fixed left-0 top-0 h-screen w-72 bg-white dark:bg-darkcard border-r border-slate-200 dark:border-slate-700 z-50 transition-transform -translate-x-full lg:translate-x-0 overflow-y-auto">
         <div class="p-6">
-            <div class="flex items-center gap-3 text-primary dark:text-blue-400 mb-10">
-                <i class="fa-solid fa-house-medical text-3xl"></i>
-                <h1 class="text-2xl font-bold tracking-tight">MedMaster</h1>
+            <div class="flex items-center gap-3 text-primary dark:text-blue-400 mb-8">
+                <i class="fa-solid fa-house-medical text-3xl animate-pulse"></i>
+                <h1 class="text-2xl font-black tracking-tight">MedMaster <span class="text-xs font-bold bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-md">PRO</span></h1>
+            </div>
+
+            <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-slate-700">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm">LV <span id="user-level">1</span></div>
+                    <div>
+                        <p class="font-bold text-sm">Bác sĩ tương lai</p>
+                        <p class="text-xs text-slate-400 font-medium" id="xp-display">0 / 100 XP</p>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div id="xp-progress-bar" class="bg-primary h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
             </div>
             
-            <nav class="space-y-1" id="main-nav">
-                </nav>
+            <nav class="space-y-1" id="main-nav"></nav>
         </div>
     </aside>
 
-    <main class="lg:ml-72 min-h-screen">
+    <main class="lg:ml-72 min-h-screen flex flex-col">
         <header class="glass sticky top-0 z-40 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex justify-between items-center">
-            <button onclick="toggleSidebar()" class="lg:hidden text-2xl"><i class="fa-solid fa-bars"></i></button>
-            <h2 id="current-title" class="text-xl font-bold uppercase tracking-wider">Trang Chủ</h2>
+            <button onclick="toggleSidebar()" class="lg:hidden text-2xl text-slate-600 dark:text-slate-300"><i class="fa-solid fa-bars"></i></button>
+            <h2 id="current-title" class="text-lg font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">Trang Chủ</h2>
             <div class="flex items-center gap-4">
-                <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-lg">
+                <button onclick="switchTab('notif', 'Thông báo')" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 relative">
+                    <i class="fa-solid fa-bell"></i>
+                    <span id="notif-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center hidden">0</span>
+                </button>
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                     <i id="theme-icon" class="fa-solid fa-moon"></i>
                 </button>
-                <div class="flex items-center gap-2 border-l pl-4 dark:border-slate-700">
-                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">BS</div>
-                    <span class="hidden md:block font-semibold">Bác sĩ tương lai</span>
-                </div>
+                <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold border dark:border-slate-700">BS</div>
             </div>
         </header>
 
-        <div class="p-6 max-w-7xl mx-auto">
+        <div class="p-6 max-w-7xl mx-auto w-full flex-1">
             
             <section id="dashboard" class="tab-content active space-y-6">
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group">
                     <div class="relative z-10">
-                        <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold mb-4 inline-block italic">Cảm hứng mỗi ngày</span>
-                        <p id="quote-display" class="text-2xl md:text-3xl font-bold mb-4 leading-relaxed">"Kiến thức Y khoa là đại dương, hãy chèo lái bằng sự kiên trì."</p>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold mb-3 inline-block italic">Động lực học tập</span>
+                        <p id="quote-display" class="text-xl md:text-2xl font-bold mb-4 leading-relaxed">"Đang tải câu nói truyền cảm hứng..."</p>
                         <div class="flex gap-2">
-                            <button onclick="editQuote()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm transition"><i class="fa-solid fa-pen-to-square mr-2"></i>Chỉnh sửa</button>
+                            <button onclick="editQuote()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-sm font-semibold transition"><i class="fa-solid fa-pen-to-square mr-2"></i>Thay đổi câu nói</button>
                         </div>
                     </div>
-                    <i class="fa-solid fa-quote-right absolute -bottom-4 -right-4 text-9xl opacity-10"></i>
+                    <i class="fa-solid fa-quote-right absolute -bottom-6 -right-6 text-9xl opacity-10"></i>
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
-                        <p class="text-slate-500 text-xs font-bold uppercase">Giờ học</p>
-                        <p class="text-2xl font-black text-primary mt-1">128h</p>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Tổng giờ học</p>
+                        <p class="text-2xl font-black text-primary mt-1" id="stat-hours">142h</p>
                     </div>
                     <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
-                        <p class="text-slate-500 text-xs font-bold uppercase">Bài học</p>
-                        <p class="text-2xl font-black text-green-500 mt-1">45</p>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Bài học xong</p>
+                        <p class="text-2xl font-black text-green-500 mt-1">48</p>
                     </div>
                     <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
-                        <p class="text-slate-500 text-xs font-bold uppercase">Câu hỏi</p>
-                        <p class="text-2xl font-black text-orange-500 mt-1">1,240</p>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Câu hỏi đã làm</p>
+                        <p class="text-2xl font-black text-orange-500 mt-1">1,320</p>
                     </div>
                     <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
-                        <p class="text-slate-500 text-xs font-bold uppercase">Kỹ năng</p>
-                        <p class="text-2xl font-black text-purple-500 mt-1">12</p>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Kỹ năng đạt</p>
+                        <p class="text-2xl font-black text-purple-500 mt-1" id="stat-skills">0</p>
                     </div>
                     <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
-                        <p class="text-slate-500 text-xs font-bold uppercase">GPA</p>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">GPA Hiện tại</p>
                         <p id="stat-gpa" class="text-2xl font-black text-red-500 mt-1">0.0</p>
                     </div>
                     <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
-                        <p class="text-slate-500 text-xs font-bold uppercase">Streak</p>
-                        <p class="text-2xl font-black text-yellow-500 mt-1">🔥 7</p>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Chuỗi Ngày</p>
+                        <p class="text-2xl font-black text-yellow-500 mt-1">🔥 14 ngày</p>
                     </div>
                 </div>
 
                 <div class="grid lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
-                        <h3 class="font-bold mb-6 flex items-center gap-2"><i class="fa-solid fa-chart-line text-primary"></i> Tiến độ học tập</h3>
+                        <h3 class="font-bold mb-6 flex items-center gap-2"><i class="fa-solid fa-chart-line text-primary"></i> Biểu đồ tiến độ học tập</h3>
                         <canvas id="mainChart" class="w-full"></canvas>
                     </div>
                     <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold">Nhiệm vụ hôm nay</h3>
-                            <span id="todo-percent" class="text-xs font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded-full">0%</span>
+                            <h3 class="font-bold text-base">Nhiệm vụ hôm nay</h3>
+                            <span id="todo-percent" class="text-xs font-bold bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300 px-2.5 py-1 rounded-full">0%</span>
                         </div>
-                        <div class="space-y-3" id="todo-list">
-                            </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden mb-4">
+                            <div id="todo-progress-bar" class="bg-primary h-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1" id="todo-list"></div>
                     </div>
                 </div>
             </section>
 
             <section id="competency" class="tab-content space-y-6">
                 <div class="grid md:grid-cols-2 gap-6">
-                    <div class="bg-white dark:bg-darkcard p-8 rounded-3xl border dark:border-slate-700 shadow-sm">
-                        <h3 class="text-2xl font-black mb-6 tracking-tight">Thống kê năng lực</h3>
+                    <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
+                        <h3 class="text-xl font-bold mb-6">Phân tích điểm năng lực</h3>
                         <div class="space-y-4">
-                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                                <span>Điểm Lý thuyết</span>
-                                <span id="comp-theory" class="font-black text-primary text-xl">0.0</span>
+                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700">
+                                <span class="font-medium text-sm">Điểm lý thuyết trung bình</span>
+                                <span id="comp-theory" class="font-black text-primary text-lg">0.0</span>
                             </div>
-                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                                <span>Điểm Thực hành</span>
-                                <span id="comp-practice" class="font-black text-green-500 text-xl">0.0</span>
+                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700">
+                                <span class="font-medium text-sm">Điểm thực hành lâm sàng</span>
+                                <span id="comp-practice" class="font-black text-green-500 text-lg">0.0</span>
                             </div>
-                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                                <span>Điểm Case lâm sàng</span>
-                                <span id="comp-case" class="font-black text-purple-500 text-xl">0.0</span>
+                            <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700">
+                                <span class="font-medium text-sm">Điểm giải quyết case lâm sàng</span>
+                                <span id="comp-case" class="font-black text-purple-500 text-lg">0.0</span>
                             </div>
-                            <div class="mt-6 border-t pt-6">
-                                <p class="text-slate-500 font-bold mb-2">GPA TỔNG KẾT</p>
-                                <p id="comp-gpa" class="text-5xl font-black text-slate-800 dark:text-white">0.0</p>
+                            <div class="mt-6 border-t dark:border-slate-700 pt-4 flex justify-between items-end">
+                                <div>
+                                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">GPA Hệ 4</p>
+                                    <p id="comp-gpa4" class="text-4xl font-black text-slate-800 dark:text-white">0.00</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">GPA Hệ 10</p>
+                                    <p id="comp-gpa10" class="text-2xl font-bold text-slate-500 dark:text-slate-400">0.0</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-blue-600 rounded-3xl p-8 text-white shadow-xl flex flex-col justify-between">
+                    <div class="bg-blue-600 rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between">
                         <div>
-                            <h3 class="text-2xl font-black mb-6 italic"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI Đánh giá</h3>
-                            <div id="ai-evaluation" class="space-y-4">
-                                <p class="opacity-80">Đang cập nhật dữ liệu để AI phân tích...</p>
-                            </div>
+                            <h3 class="text-xl font-black mb-4 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Tự động Đánh giá Năng lực</h3>
+                            <div id="ai-evaluation-box" class="space-y-3 text-sm font-medium leading-relaxed"></div>
                         </div>
-                        <div class="mt-8 p-4 bg-white/10 rounded-2xl">
-                            <p class="text-sm">Hệ thống tự động phân tích điểm và kỹ năng để gợi ý lộ trình học tập tối ưu.</p>
+                        <div class="mt-6 p-4 bg-white/10 rounded-2xl border border-white/10 text-xs">
+                            Hệ thống AI phân tích thời gian thực dựa trên kết quả học tập, kỹ năng lâm sàng của bạn để đưa ra cảnh báo cải thiện.
                         </div>
                     </div>
                 </div>
@@ -154,110 +173,312 @@
 
             <section id="theory" class="tab-content space-y-6">
                 <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
-                    <div class="flex flex-col md:flex-row gap-4 justify-between mb-8">
+                    <div class="flex flex-col md:flex-row gap-4 justify-between mb-6">
                         <div class="relative flex-1">
                             <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" id="lib-search" placeholder="Tìm kiếm tài liệu..." class="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none focus:ring-2 ring-primary">
+                            <input type="text" id="lib-search" oninput="filterLibrary()" placeholder="Tìm tên tài liệu, hoặc gắn thẻ tag..." class="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 ring-primary transition">
                         </div>
-                        <select id="lib-filter" class="px-6 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none">
-                            <option value="all">Tất cả chuyên khoa</option>
+                        <select id="lib-filter" onchange="filterLibrary()" class="px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                            <option value="all">Tất cả phân loại</option>
                             <option value="Giải phẫu">Giải phẫu</option>
+                            <option value="Sinh lý">Sinh lý</option>
                             <option value="Nội khoa">Nội khoa</option>
-                            <option value="Nhi khoa">Nhi khoa</option>
+                            <option value="Ngoại khoa">Ngoại khoa</option>
+                            <option value="Sản">Sản</option>
+                            <option value="Nhi">Nhi</option>
                         </select>
                     </div>
-                    <div id="theory-library" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        </div>
-                </div>
-            </section>
-
-            <section id="grades" class="tab-content space-y-6">
-                <div class="bg-white dark:bg-darkcard p-8 rounded-3xl border dark:border-slate-700 shadow-sm">
-                    <h3 class="text-xl font-bold mb-6">Cập nhật điểm số mới nhất</h3>
-                    <div class="grid md:grid-cols-3 gap-6">
-                        <div>
-                            <label class="block text-sm font-bold mb-2">Lý thuyết</label>
-                            <input type="number" id="input-theory" step="0.1" max="10" placeholder="0.0" class="w-full p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2">Thực hành</label>
-                            <input type="number" id="input-practice" step="0.1" max="10" placeholder="0.0" class="w-full p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2">Case lâm sàng</label>
-                            <input type="number" id="input-case" step="0.1" max="10" placeholder="0.0" class="w-full p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border-none outline-none">
-                        </div>
-                    </div>
-                    <button onclick="saveGrades()" class="mt-8 w-full py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition">LƯU DỮ LIỆU</button>
+                    <div id="theory-library" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                 </div>
             </section>
 
             <section id="practice" class="tab-content space-y-6">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-2xl font-bold">Kỹ năng lâm sàng</h3>
-                    <button onclick="addSkill()" class="bg-primary text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-blue-500/20"><i class="fa-solid fa-plus mr-2"></i>Thêm kỹ năng</button>
+                    <h3 class="text-xl font-bold">Kỹ năng lâm sàng cần đạt</h3>
+                    <button onclick="addSkill()" class="bg-primary text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-blue-500/20 text-sm hover:bg-blue-700 transition"><i class="fa-solid fa-plus mr-2"></i>Thêm kỹ năng</button>
                 </div>
-                <div id="skills-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    </div>
+                <div id="skills-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </section>
 
-            <section id="other-modules" class="tab-content text-center py-20">
-                <i class="fa-solid fa-screwdriver-wrench text-6xl text-slate-300 mb-6"></i>
-                <h3 class="text-2xl font-bold text-slate-400">Module này đang được xây dựng</h3>
+            <section id="cases" class="tab-content space-y-6">
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-darkcard p-5 rounded-3xl border dark:border-slate-700 shadow-sm space-y-3">
+                        <h3 class="font-bold text-base border-b dark:border-slate-700 pb-3"><i class="fa-solid fa-folder-open text-primary mr-2"></i>Kho Tình Huống Lâm Sàng</h3>
+                        <div class="space-y-2" id="cases-pool-container"></div>
+                    </div>
+                    <div class="lg:col-span-2 flex flex-col bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm" id="active-case-zone">
+                        <div class="text-center text-slate-400 py-12"><i class="fa-solid fa-user-injured text-5xl mb-3"></i><p>Vui lòng lựa chọn một ca lâm sàng bên trái để bắt đầu mô phỏng</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="habits" class="tab-content space-y-6">
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="space-y-6">
+                        <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm text-center">
+                            <h3 class="font-bold text-sm text-slate-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-stopwatch text-red-500 mr-2"></i>Đồng hồ Pomodoro</h3>
+                            <div class="text-5xl font-black tracking-tight mb-2 text-slate-800 dark:text-white" id="pomo-timer">25:00</div>
+                            <p class="text-xs font-semibold text-primary mb-4" id="pomo-status">Thời gian tập trung học</p>
+                            <div class="flex justify-center gap-2">
+                                <button onclick="togglePomodoro()" id="pomo-btn-start" class="px-4 py-2 bg-primary text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition">Bắt đầu</button>
+                                <button onclick="resetPomodoro()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 font-bold rounded-xl text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition">Đặt lại</button>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-orange-500 to-red-600 text-white p-6 rounded-3xl shadow-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-sm opacity-90 text-uppercase">Học tập chuyên cần</span>
+                                <i class="fa-solid fa-fire text-2xl"></i>
+                            </div>
+                            <p class="text-4xl font-black mb-1">14 Ngày</p>
+                            <p class="text-xs opacity-75 font-medium">Bạn đứng top 5% sinh viên chăm chỉ nhất tuần này!</p>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-base">Thói quen hàng ngày</h3>
+                            <button onclick="addHabit()" class="text-primary text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i>Tạo mới</button>
+                        </div>
+                        <div class="space-y-3 flex-1 overflow-y-auto" id="habits-container"></div>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
+                        <h3 class="font-bold text-base mb-4"><i class="fa-solid fa-calendar-days text-primary mr-2"></i>Lịch Trực & Thi Cử</h3>
+                        <div class="space-y-3" id="calendar-events-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="grades" class="tab-content space-y-6">
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
+                        <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-3">
+                            <h3 class="font-bold text-base">Bảng điểm các học phần</h3>
+                            <button onclick="openAddGradeModal()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-xs font-bold text-primary rounded-lg hover:bg-blue-50 transition"><i class="fa-solid fa-plus mr-1"></i>Thêm môn học</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="text-xs font-bold text-slate-400 border-b dark:border-slate-700 uppercase tracking-wider">
+                                        <th class="pb-3">Tên môn học</th>
+                                        <th class="pb-3 text-center">Số tín chỉ</th>
+                                        <th class="pb-3 text-center">Thang 10</th>
+                                        <th class="pb-3 text-center">Thang 4</th>
+                                        <th class="pb-3 text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="grades-table-body" class="text-sm font-medium"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
+                            <h3 class="font-bold text-base mb-4"><i class="fa-solid fa-bullseye text-primary mr-2"></i>Dự Đoán Đạt Mục Tiêu</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">GPA Mục Tiêu mong muốn (Hệ 4)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" id="target-gpa-input" step="0.01" min="0" max="4" class="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none font-bold">
+                                        <button onclick="calculateGPAPrediction()" class="px-4 py-3 bg-primary text-white font-bold text-sm rounded-xl">Tính toán</button>
+                                    </div>
+                                </div>
+                                <div id="prediction-result-box" class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 text-sm font-medium space-y-2">
+                                    Điền mục tiêu GPA hệ 4 để phân tích áp lực học tập còn lại.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-darkcard p-4 rounded-3xl border dark:border-slate-700 shadow-sm">
+                            <h3 class="font-bold text-sm mb-3">Biểu đồ GPA theo Năm học</h3>
+                            <canvas id="gpaChart" height="150"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ai-asst" class="tab-content space-y-6">
+                <div class="bg-white dark:bg-darkcard rounded-3xl border dark:border-slate-700 shadow-sm h-[550px] flex flex-col overflow-hidden">
+                    <div class="p-4 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 flex items-center gap-3">
+                        <div class="w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
+                        <div>
+                            <h3 class="font-bold text-base">Trợ lý Y khoa MedAI</h3>
+                            <p class="text-xs text-slate-400 font-medium">Giải đáp câu hỏi, ca lâm sàng, hướng dẫn thực hành chuyên sâu</p>
+                        </div>
+                    </div>
+                    <div class="flex-1 p-6 overflow-y-auto space-y-4" id="chat-messages-box">
+                        <div class="flex gap-3 max-w-[85%]">
+                            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-black">AI</div>
+                            <div class="p-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-sm font-medium leading-relaxed">
+                                Xin chào Bác sĩ! Tôi là trợ lý AI chuyên biệt về Y khoa. Bạn có thể sử dụng các lệnh mẫu bên dưới hoặc nhập câu hỏi trực tiếp để thảo luận chuyên môn.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-slate-50 dark:bg-slate-800/50 border-t dark:border-slate-700 flex flex-wrap gap-2 text-xs font-bold text-primary">
+                        <button onclick="triggerAICmd('Hướng dẫn khám gan.')" class="bg-white dark:bg-darkcard px-3 py-1.5 rounded-lg border dark:border-slate-700 hover:bg-blue-50 transition">📋 Hướng dẫn khám gan</button>
+                        <button onclick="triggerAICmd('Tạo 5 câu hỏi trắc nghiệm COPD kèm đáp án.')" class="bg-white dark:bg-darkcard px-3 py-1.5 rounded-lg border dark:border-slate-700 hover:bg-blue-50 transition">📝 Tạo câu hỏi COPD</button>
+                        <button onclick="triggerAICmd('Giải thích các bước đọc khí máu động mạch.')" class="bg-white dark:bg-darkcard px-3 py-1.5 rounded-lg border dark:border-slate-700 hover:bg-blue-50 transition">🩸 Giải thích Khí máu động mạch</button>
+                        <button onclick="triggerAICmd('Tạo một ca lâm sàng viêm tụy cấp mức độ trung bình.')" class="bg-white dark:bg-darkcard px-3 py-1.5 rounded-lg border dark:border-slate-700 hover:bg-blue-50 transition">🧬 Ca lâm sàng Viêm tụy cấp</button>
+                    </div>
+                    <div class="p-4 border-t dark:border-slate-700 flex gap-2">
+                        <input type="text" id="chat-input-field" placeholder="Nhập câu hỏi chuyên môn của bạn tại đây..." class="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 ring-primary">
+                        <button onclick="sendChatMessage()" class="px-5 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 transition"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="gamify" class="tab-content space-y-6">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm text-center md:col-span-1">
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Cấp độ hiện tại</p>
+                        <p class="text-7xl font-black text-primary mb-3" id="gamify-lvl">1</p>
+                        <div class="p-3 bg-blue-50 dark:bg-blue-950/50 rounded-2xl border dark:border-slate-700 inline-block text-xs font-bold text-primary" id="gamify-xp-summary">
+                            Tích lũy 0 XP nữa để lên cấp
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm md:col-span-2">
+                        <h3 class="font-bold text-base mb-4"><i class="fa-solid fa-award text-yellow-500 mr-2"></i>Hệ thống Huy hiệu danh giá</h3>
+                        <div class="grid sm:grid-cols-2 gap-4" id="badges-grid-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="notif" class="tab-content space-y-6">
+                <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm max-w-2xl mx-auto">
+                    <div class="flex justify-between items-center mb-6 border-b dark:border-slate-700 pb-3">
+                        <h3 class="font-bold text-base"><i class="fa-solid fa-bell text-primary mr-2"></i>Trung Tâm Thông Báo Nhắc Nhở</h3>
+                        <button onclick="markAllNotificationsAsRead()" class="text-xs font-bold text-primary">Đánh dấu tất cả đã đọc</button>
+                    </div>
+                    <div class="space-y-3" id="notifications-wrapper-box"></div>
+                </div>
             </section>
 
         </div>
     </main>
 
+    <div id="add-grade-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-darkcard p-6 rounded-3xl max-w-sm w-full mx-4 border dark:border-slate-700">
+            <h3 class="font-black text-lg mb-4">Thêm học phần mới</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-2">Tên học phần/Môn học</label>
+                    <input type="text" id="modal-subject-name" placeholder="Ví dụ: Nội cơ sở" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-2">Số tín chỉ</label>
+                    <input type="number" id="modal-subject-credits" min="1" max="10" placeholder="3" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-2">Điểm tổng kết hệ 10</label>
+                    <input type="number" id="modal-subject-grade" min="0" max="10" step="0.1" placeholder="8.5" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none">
+                </div>
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="closeAddGradeModal()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 font-bold text-sm rounded-xl">Hủy</button>
+                <button onclick="submitNewGrade()" class="flex-1 py-3 bg-primary text-white font-bold text-sm rounded-xl">Thêm</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        /* --- CORE DATA & LOCAL STORAGE --- */
-        const defaultData = {
-            quote: "Học tập là hạt giống của hạnh phúc. Hãy bắt đầu ngay hôm nay!",
+        /* --- DỮ LIỆU ĐỊNH NGHĨA SẴN CHO APP (POOL CÁC BÀI HỌC VÀ LÂM SÀNG) --- */
+        const initialDefaultData = {
+            quote: "Kiến thức Y khoa là đại dương, hãy chèo lái bằng sự kiên trì.",
             tasks: [
-                { id: 1, text: "Học lý thuyết Giải phẫu gan", done: false },
-                { id: 2, text: "Làm trắc nghiệm nội khoa", done: true },
-                { id: 3, text: "Xem video khám phổi", done: false }
+                { id: 1, text: "Học lý thuyết Giải phẫu gan mật", done: false },
+                { id: 2, text: "Làm trắc nghiệm chuẩn đoán Hình ảnh", done: true },
+                { id: 3, text: "Xem video kỹ năng thực hành khám bụng", done: false },
+                { id: 4, text: "Xem video kỹ năng CPR cấp cứu", done: false },
+                { id: 5, text: "Giải quyết case lâm sàng Viêm ruột thừa", done: false }
             ],
-            grades: { theory: 0, practice: 0, case: 0 },
+            gradesList: [
+                { id: 1, name: "Giải phẫu học đại cương", credits: 4, grade10: 8.5 },
+                { id: 2, name: "Sinh lý học chuyên sâu", credits: 3, grade10: 6.8 },
+                { id: 3, name: "Triệu chứng học Nội khoa", credits: 3, grade10: 7.5 }
+            ],
+            targetGPA: 3.20,
             skills: [
-                { id: 1, name: "Khám bụng", rating: 3, steps: ["Nhìn", "Nghe", "Gõ", "Sờ"] },
-                { id: 2, name: "Tiêm bắp", rating: 4, steps: ["Sát khuẩn", "Góc kim", "Rút nòng", "Bơm thuốc"] }
+                { id: 1, name: "Khám bụng", rating: 4, steps: ["Nhìn thành bụng di động", "Nghe nhu động ruột", "Gõ xác định diện đục gan", "Sờ tìm điểm đau khu trú"] },
+                { id: 2, name: "Cấp cứu ngưng tuần hoàn CPR", rating: 2, steps: ["Đánh giá tri giác hiện trường", "Gọi hỗ trợ khẩn cấp", "Ép tim ngoài lồng ngực tần số 100-120 l/phút", "Khai thông đường thở và thổi ngạt"] },
+                { id: 3, name: "Đo huyết áp động mạch", rating: 5, steps: ["Chuẩn bị người bệnh tư thế nằm nghỉ", "Quấn băng quấn trên nếp khuỷu 2cm", "Đặt ống nghe lên động mạch cánh tay", "Bơm hơi và xả chậm xác định HA tâm thu/tâm trương"] }
             ],
             library: [
-                { title: "Giải phẫu chi trên", tag: "Giải phẫu", icon: "fa-bone" },
-                { title: "Điều trị tăng huyết áp", tag: "Nội khoa", icon: "fa-heart-pulse" },
-                { title: "Phát triển tâm thần vận động", tag: "Nhi khoa", icon: "fa-child" }
+                { title: "Giải phẫu định khu Chi trên", tag: "Giải phẫu", icon: "fa-bone" },
+                { title: "Cơ chế điều hòa huyết áp", tag: "Sinh lý", icon: "fa-heart-pulse" },
+                { title: "Bệnh học Tăng huyết áp người lớn", tag: "Nội khoa", icon: "fa-heart" },
+                { title: "Viêm ruột thừa cấp & Biến chứng", tag: "Ngoại khoa", icon: "fa-capsules" },
+                { title: "Chẩn đoán Sốt xuất huyết Dengue ở trẻ em", tag: "Nhi", icon: "fa-baby" }
+            ],
+            habits: [
+                { id: 1, text: "Học lý thuyết y khoa 2 giờ/ngày", done: false },
+                { id: 2, text: "Giải quyết 20 câu trắc nghiệm/ngày", done: true },
+                { id: 3, text: "Xem ít nhất 1 video kỹ năng skill/ngày", done: false }
+            ],
+            calendarEvents: [
+                { date: "25/06", type: "thi", title: "Thi lý thuyết Module Nội bệnh lý" },
+                { date: "28/06", type: "truc", title: "Lịch trực Cấp cứu - Bệnh viện Chợ Rẫy" },
+                { date: "02/07", type: "hoc", title: "Thực hành Skill Lab đặt sonde dạ dày" }
+            ],
+            xp: 45,
+            notifications: [
+                { id: 1, text: "Nhắc nhở: Sắp tới lịch trực Cấp cứu tại bệnh viện vào ngày 28/06.", read: false },
+                { id: 2, text: "Lịch thi hệ thống: Bài thi lý thuyết Nội bệnh lý sẽ diễn ra vào ngày 25/06.", read: false },
+                { id: 3, text: "Thành tích: Chúc mừng bạn đạt huy hiệu 'Thành thạo khám bụng'.", read: true }
             ]
         };
 
-        let appData = JSON.parse(localStorage.getItem('medProData')) || defaultData;
+        const staticClinicalCases = [
+            {
+                id: "case-1", specialty: "Nội khoa", title: "Bệnh nhân ho sốt, khó thở cấp tính",
+                profile: { age: 58, gender: "Nam", history: "Tiền sử hút thuốc lá nhiều năm, sốt cao run rẩy 2 ngày nay, kèm ho khạc đờm đặc màu rỉ sắt, đau ngực vùng bên phải tăng lên khi hít sâu." },
+                hỏi_bệnh: "Bệnh nhân tỉnh táo, trả lời mệt mỏi. Ho nhiều thành cơn, đau đầu nhẹ, không nôn ói.",
+                khám: "Sốt 39 độ C, mạch 95 l/p, HA 120/80 mmHg. Phổi bên phải nghe rì rào phế nang giảm, có vùng đục khi gõ, nghe thấy có rên nổ khu trú.",
+                xét_nghiệm: "Công thức máu: Bạch cầu tăng cao (14.500/mm3), ưu thế Neutrophil. X-quang ngực thẳng: Hình đám mờ thuần nhất hình tam giác vùng thùy dưới phổi phải.",
+                chẩn_đoán: "Viêm phổi thùy cấp tính do vi khuẩn (khả năng cao do Phế cầu).",
+                điều_trị: "Kháng sinh đường tĩnh mạch (Ceftriaxone kết hợp Levofloxacin), hạ sốt, bù dịch bù điện giải và thở oxy hỗ trợ qua gọng mũi.",
+                scores: { hoichuong: 25, khambenh: 25, canlamsang: 25, dieutri: 25 },
+                evaluation: "Xuất sắc! Bạn đã đưa ra chỉ định xét nghiệm hình ảnh học chuẩn xác để thấy hội chứng đông đặc phổi. Phác đồ kháng sinh rất phù hợp với hướng dẫn điều trị ATS/ATS."
+            },
+            {
+                id: "case-2", specialty: "Ngoại khoa", title: "Bệnh nhân đau bụng hố chậu phải cấp tính",
+                profile: { age: 24, gender: "Nữ", history: "Khởi phát đau bụng âm ỉ vùng thượng vị cách đây 12 tiếng, sau đó khu trú và đau trội lên ở vùng hố chậu phải. Sốt nhẹ 37.8 độ C, buồn nôn nhưng không nôn." },
+                hỏi_bệnh: "Bệnh nhân chưa lập gia đình, chu kỳ kinh nguyệt đều đặn, kỳ kinh cuối cách đây 2 tuần. Đau liên tục tăng dần.",
+                khám: "Ấn đau chói vùng hố chậu phải, có phản ứng thành bụng khu trú vùng điểm McBurney dương tính rõ rệt.",
+                xét_nghiệm: "Siêu âm ổ bụng: Ruột thừa đường kính lớn 8mm, thành dày, ấn không xẹp, có ít dịch xung quanh vùng hố chậu phải.",
+                chẩn_đoán: "Viêm ruột thừa cấp tính giờ thứ 12.",
+                điều_trị: "Nhịn ăn uống hoàn toàn, lập đường truyền dịch, chỉ định phẫu thuật nội soi cắt ruột thừa cấp cứu.",
+                scores: { hoichuong: 20, khambenh: 30, canlamsang: 25, dieutri: 25 },
+                evaluation: "Chính xác! Đối với viêm ruột thừa cấp, việc khám phát hiện phản ứng thành bụng và chỉ định siêu âm là chìa khóa vàng. Chỉ định phẫu thuật sớm tránh biến chứng vỡ gây viêm phúc mạc bụng."
+            }
+        ];
+
+        let appData = JSON.parse(localStorage.getItem('medProDataV3')) || initialDefaultData;
+        let activeCaseState = null;
 
         function save() {
-            localStorage.setItem('medProData', JSON.stringify(appData));
+            localStorage.setItem('medProDataV3', JSON.stringify(appData));
             refreshUI();
         }
 
-        /* --- UI COMPONENTS --- */
-        const navItems = [
+        /* --- QUẢN LÝ SIDEBAR & TABS --- */
+        const navMenuDefinitions = [
             { id: 'dashboard', icon: 'fa-gauge-high', text: 'Trang chủ' },
             { id: 'competency', icon: 'fa-id-card-clip', text: 'Hồ sơ năng lực' },
             { id: 'theory', icon: 'fa-book-medical', text: 'Module Lý thuyết' },
             { id: 'practice', icon: 'fa-stethoscope', text: 'Module Thực hành' },
-            { id: 'grades', icon: 'fa-star', text: 'Quản lý điểm' },
-            { id: 'cases', icon: 'fa-user-doctor', text: 'Case lâm sàng' },
-            { id: 'habits', icon: 'fa-brain', text: 'Thói quen' },
-            { id: 'ai-asst', icon: 'fa-robot', text: 'AI Assistant' },
+            { id: 'cases', icon: 'fa-user-doctor', text: 'Tình huống LS' },
+            { id: 'habits', icon: 'fa-brain', text: 'Thói quen & Lịch' },
+            { id: 'grades', icon: 'fa-graduation-cap', text: 'Quản lý điểm' },
+            { id: 'ai-asst', icon: 'fa-robot', text: 'Trợ lý MedAI' },
             { id: 'gamify', icon: 'fa-trophy', text: 'Gamification' },
             { id: 'notif', icon: 'fa-bell', text: 'Thông báo' }
         ];
 
-        function renderNav() {
+        function renderSidebarMenu() {
             const nav = document.getElementById('main-nav');
-            nav.innerHTML = navItems.map(item => `
+            nav.innerHTML = navMenuDefinitions.map(item => `
                 <button onclick="switchTab('${item.id}', '${item.text}')" 
-                        class="sidebar-item w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl font-semibold transition-all group"
+                        class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                         id="nav-${item.id}">
-                    <i class="fa-solid ${item.icon} w-6 group-hover:scale-110"></i>
+                    <i class="fa-solid ${item.icon} w-5 text-center text-base"></i>
                     <span>${item.text}</span>
                 </button>
             `).join('');
@@ -268,166 +489,734 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
             
-            const target = document.getElementById(id) || document.getElementById('other-modules');
-            target.classList.add('active');
-            document.getElementById(`nav-${id}`).classList.add('active');
-            document.getElementById('current-title').innerText = title;
-
-            if(window.innerWidth < 1024) toggleSidebar();
-        }
-
-        /* --- MODULE: DASHBOARD --- */
-        function renderTodo() {
-            const list = document.getElementById('todo-list');
-            list.innerHTML = appData.tasks.map((t, index) => `
-                <div class="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer">
-                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTodo(${index})" class="w-5 h-5 rounded accent-primary">
-                    <span class="${t.done ? 'line-through opacity-50' : ''}">${t.text}</span>
-                </div>
-            `).join('');
-            
-            const doneCount = appData.tasks.filter(t => t.done).length;
-            const percent = Math.round((doneCount / appData.tasks.length) * 100) || 0;
-            document.getElementById('todo-percent').innerText = percent + '%';
-        }
-
-        function toggleTodo(index) {
-            appData.tasks[index].done = !appData.tasks[index].done;
-            save();
-        }
-
-        function editQuote() {
-            const q = prompt("Nhập câu nói động lực mới:", appData.quote);
-            if(q) { appData.quote = q; save(); }
-        }
-
-        /* --- MODULE: PRACTICE --- */
-        function renderSkills() {
-            const list = document.getElementById('skills-list');
-            list.innerHTML = appData.skills.map((s, idx) => `
-                <div class="bg-white dark:bg-darkcard p-6 rounded-3xl border dark:border-slate-700 shadow-sm">
-                    <div class="flex justify-between items-start mb-4">
-                        <h4 class="font-bold text-lg">${s.name}</h4>
-                        <button onclick="deleteSkill(${idx})" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                    <div class="flex text-yellow-400 gap-1 mb-4">
-                        ${Array(5).fill(0).map((_, i) => `<i class="${i < s.rating ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
-                    </div>
-                    <div class="space-y-2 border-t pt-4">
-                        <p class="text-xs font-bold text-slate-400 uppercase mb-2">Checklist</p>
-                        ${s.steps.map(step => `
-                            <div class="flex items-center gap-2 text-sm">
-                                <i class="fa-solid fa-check text-green-500"></i> ${step}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function addSkill() {
-            const name = prompt("Tên kỹ năng mới:");
-            if(name) {
-                appData.skills.push({ id: Date.now(), name, rating: 1, steps: ["Chuẩn bị", "Tiến hành", "Kết thúc"] });
-                save();
+            const target = document.getElementById(id);
+            if (target) {
+                target.classList.add('active');
+                const navBtn = document.getElementById(`nav-${id}`);
+                if (navBtn) navBtn.classList.add('active');
+                document.getElementById('current-title').innerText = title;
             }
-        }
-
-        function deleteSkill(idx) {
-            appData.skills.splice(idx, 1);
-            save();
-        }
-
-        /* --- MODULE: GRADES & COMPETENCY --- */
-        function saveGrades() {
-            appData.grades.theory = parseFloat(document.getElementById('input-theory').value) || 0;
-            appData.grades.practice = parseFloat(document.getElementById('input-practice').value) || 0;
-            appData.grades.case = parseFloat(document.getElementById('input-case').value) || 0;
-            save();
-            alert("Đã cập nhật điểm số!");
-        }
-
-        function refreshUI() {
-            // Update Dashboard display
-            document.getElementById('quote-display').innerText = `"${appData.quote}"`;
-            renderTodo();
-            renderSkills();
-
-            // Update Competency display
-            const g = appData.grades;
-            document.getElementById('comp-theory').innerText = g.theory.toFixed(1);
-            document.getElementById('comp-practice').innerText = g.practice.toFixed(1);
-            document.getElementById('comp-case').innerText = g.case.toFixed(1);
-            
-            const gpa = ((g.theory + g.practice + g.case) / 3).toFixed(1);
-            document.getElementById('comp-gpa').innerText = gpa;
-            document.getElementById('stat-gpa').innerText = gpa;
-
-            // AI Evaluation Logic
-            const evalBox = document.getElementById('ai-evaluation');
-            let evals = [];
-            if(g.theory < 7) evals.push(`<div class="p-3 bg-red-500/20 rounded-xl">⚠️ Lý thuyết còn yếu, hãy ôn tập lại các Module PDF.</div>`);
-            if(g.practice < 7) evals.push(`<div class="p-3 bg-orange-500/20 rounded-xl">⚠️ Kỹ năng lâm sàng cần thực hiện nhiều hơn.</div>`);
-            
-            const weakSkill = appData.skills.find(s => s.rating < 3);
-            if(weakSkill) evals.push(`<div class="p-3 bg-yellow-500/20 rounded-xl">📍 Cải thiện kỹ năng: ${weakSkill.name}</div>`);
-            
-            if(evals.length === 0) evals.push(`<div class="p-3 bg-green-500/20 rounded-xl">✅ Năng lực cân bằng tốt. Tiếp tục phát huy!</div>`);
-            evalBox.innerHTML = evals.join('');
-
-            // Library
-            document.getElementById('theory-library').innerHTML = appData.library.map(doc => `
-                <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center gap-4 hover:ring-1 ring-primary transition cursor-pointer">
-                    <div class="w-12 h-12 bg-white dark:bg-darkcard rounded-xl flex items-center justify-center text-primary shadow-sm">
-                        <i class="fa-solid ${doc.icon} text-xl"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-sm">${doc.title}</h4>
-                        <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">${doc.tag}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        /* --- THEME & UTILS --- */
-        function toggleDarkMode() {
-            document.documentElement.classList.toggle('dark');
-            const icon = document.getElementById('theme-icon');
-            icon.className = document.documentElement.classList.contains('dark') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            if (window.innerWidth < 1024) toggleSidebar();
         }
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
         }
 
-        /* --- CHART JS --- */
-        function initChart() {
-            const ctx = document.getElementById('mainChart');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-                    datasets: [{
-                        label: 'Số giờ học',
-                        data: [2, 4, 3, 5, 2, 8, 4],
-                        borderColor: '#2563eb',
-                        tension: 0.4,
-                        fill: true,
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            icon.className = document.documentElement.classList.contains('dark') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+
+        /* --- MODULE: DASHBOARD TO-DO LIST --- */
+        function renderDashboardTodoList() {
+            const box = document.getElementById('todo-list');
+            box.innerHTML = appData.tasks.map((t, idx) => `
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border dark:border-slate-700">
+                    <label class="flex items-center gap-3 cursor-pointer flex-1">
+                        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleDashboardTodo(${idx})" class="w-4 h-4 rounded text-primary focus:ring-primary accent-primary">
+                        <span class="text-sm font-medium ${t.done ? 'line-through text-slate-400' : ''}">${t.text}</span>
+                    </label>
+                    <button onclick="deleteDashboardTodo(${idx})" class="text-slate-400 hover:text-red-500 transition ml-2"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                </div>
+            `).join('');
+            
+            const total = appData.tasks.length;
+            const done = appData.tasks.filter(t => t.done).length;
+            const percentage = total === 0 ? 0 : Math.round((done / total) * 100);
+            document.getElementById('todo-percent').innerText = `${percentage}%`;
+            document.getElementById('todo-progress-bar').style.width = `${percentage}%`;
+        }
+
+        function toggleDashboardTodo(idx) {
+            appData.tasks[idx].done = !appData.tasks[idx].done;
+            if(appData.tasks[idx].done) gainXP(10);
+            save();
+        }
+
+        function deleteDashboardTodo(idx) {
+            appData.tasks.splice(idx, 1);
+            save();
+        }
+
+        function editQuote() {
+            const newQ = prompt("Nhập câu nói động lực y khoa của riêng bạn:", appData.quote);
+            if(newQ) { appData.quote = newQ; save(); }
+        }
+
+        /* --- MODULE: TÌNH HUỐNG LÂM SÀNG (interactive engine) --- */
+        function renderClinicalCasesModule() {
+            const container = document.getElementById('cases-pool-container');
+            container.innerHTML = staticClinicalCases.map(c => `
+                <button onclick="selectActiveClinicalCase('${c.id}')" class="w-full text-left p-4 rounded-2xl border dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary dark:hover:border-primary transition flex flex-col gap-1.5 group">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-primary bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md self-start">${c.specialty}</span>
+                    <h4 class="font-bold text-sm group-hover:text-primary transition line-clamp-1">${c.title}</h4>
+                    <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">Tuổi: ${c.profile.age} | Giới: ${c.profile.gender}</p>
+                </button>
+            `).join('');
+        }
+
+        function selectActiveClinicalCase(id) {
+            const targetCase = staticClinicalCases.find(c => c.id === id);
+            if(!targetCase) return;
+
+            activeCaseState = {
+                data: targetCase,
+                unlockedSteps: { hoichuong: false, khambenh: false, canlamsang: false, dieutri: false },
+                finishedSimulation: false
+            };
+            updateActiveCaseZoneUI();
+        }
+
+        function triggerCaseAction(stepKey) {
+            if(!activeCaseState) return;
+            activeCaseState.unlockedSteps[stepKey] = true;
+            
+            // Nếu người dùng ấn bước cuối điều trị, coi như kết thúc và cộng điểm năng lực/XP
+            if(stepKey === 'dieutri' && !activeCaseState.finishedSimulation) {
+                activeCaseState.finishedSimulation = true;
+                gainXP(40);
+                // Đồng bộ điểm hệ thống
+                appData.grades.case = 9.0; 
+                localStorage.setItem('medProDataV3', JSON.stringify(appData));
+            }
+            updateActiveCaseZoneUI();
+        }
+
+        function updateActiveCaseZoneUI() {
+            const zone = document.getElementById('active-case-zone');
+            if(!activeCaseState) return;
+
+            const c = activeCaseState.data;
+            const steps = activeCaseState.unlockedSteps;
+
+            zone.innerHTML = `
+                <div class="flex flex-col gap-4 flex-1">
+                    <div class="border-b dark:border-slate-700 pb-3 flex justify-between items-start">
+                        <div>
+                            <span class="text-xs font-bold text-primary bg-blue-100 dark:bg-blue-950 px-2.5 py-1 rounded-md mb-2 inline-block">${c.specialty}</span>
+                            <h3 class="text-lg font-bold">${c.title}</h3>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400 font-bold">Mô phỏng Bệnh nhân</p>
+                            <p class="text-sm font-bold">${c.profile.gender}, ${c.profile.age} tuổi</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-slate-700 text-sm">
+                        <p class="font-bold text-xs text-slate-400 uppercase tracking-wide mb-1">Lý do vào viện & Bệnh sử</p>
+                        <p class="font-medium leading-relaxed">${c.profile.history}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button onclick="triggerCaseAction('hoichuong')" class="py-2.5 rounded-xl font-bold text-xs border transition ${steps.hoichuong ? 'bg-blue-500 text-white border-blue-500':'bg-white dark:bg-darkcard hover:border-primary'}">1. Hỏi Bệnh</button>
+                        <button onclick="triggerCaseAction('khambenh')" class="py-2.5 rounded-xl font-bold text-xs border transition ${steps.khambenh ? 'bg-blue-500 text-white border-blue-500':'bg-white dark:bg-darkcard hover:border-primary'}">2. Khám Lâm Sàng</button>
+                        <button onclick="triggerCaseAction('canlamsang')" class="py-2.5 rounded-xl font-bold text-xs border transition ${steps.canlamsang ? 'bg-blue-500 text-white border-blue-500':'bg-white dark:bg-darkcard hover:border-primary'}">3. Chỉ định Xét nghiệm</button>
+                        <button onclick="triggerCaseAction('dieutri')" class="py-2.5 rounded-xl font-bold text-xs border transition ${steps.dieutri ? 'bg-blue-500 text-white border-blue-500':'bg-white dark:bg-darkcard hover:border-primary'}">4. Chẩn đoán & Điều trị</button>
+                    </div>
+
+                    <div class="flex-1 space-y-3 overflow-y-auto max-h-[250px] pr-2">
+                        ${steps.hoichuong ? `<div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-medium"><b class="text-primary block mb-1">💬 Kết quả hỏi bệnh:</b> ${c.hỏi_bệnh}</div>` : ''}
+                        ${steps.khambenh ? `<div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-medium"><b class="text-primary block mb-1">🩺 Thăm khám lâm sàng:</b> ${c.khám}</div>` : ''}
+                        ${steps.canlamsang ? `<div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-medium"><b class="text-primary block mb-1">🔬 Kết quả Cận lâm sàng (Lab/X-ray):</b> ${c.xét_nghiệm}</div>` : ''}
+                        ${steps.dieutri ? `
+                            <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-medium"><b class="text-primary block mb-1">🎯 Chẩn đoán xác định:</b> ${c.chẩn_đoán}</div>
+                            <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-medium"><b class="text-primary block mb-1">💊 Hướng điều trị cấp xử trí:</b> ${c.điều_trị}</div>
+                        ` : ''}
+                    </div>
+
+                    ${activeCaseState.finishedSimulation ? `
+                        <div class="p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl grid md:grid-cols-3 gap-4 items-center">
+                            <div class="md:col-span-2 space-y-1">
+                                <h4 class="font-bold text-sm text-green-600 flex items-center gap-1.5"><i class="fa-solid fa-check-double"></i> AI Nhận Xét Đánh Giá Ca Bệnh:</h4>
+                                <p class="text-xs font-medium text-slate-600 dark:text-slate-300 leading-relaxed">${c.evaluation}</p>
+                            </div>
+                            <div class="bg-white dark:bg-darkcard p-3 rounded-xl border dark:border-slate-700 text-center shadow-sm">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase block">Tổng điểm Case</span>
+                                <span class="text-2xl font-black text-green-500">9.5 / 10</span>
+                                <div class="grid grid-cols-4 gap-1 text-[8px] font-bold text-slate-400 mt-1 pt-1 border-t dark:border-slate-700">
+                                    <div>Sử:${c.scores.hoichuong}</div><div>Khám:${c.scores.khambenh}</div><div>XN:${c.scores.canlamsang}</div><div>Trị:${c.scores.dieutri}</div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            // Cập nhật lại màn hình hồ sơ năng lực sau khi điểm case thay đổi
+            refreshUI();
+        }
+
+        /* --- MODULE: THÓI QUEN HỌC TẬP & POMODORO TIMER --- */
+        let pomodoroInterval = null;
+        let pTimeRemaining = 25 * 60; 
+        let isPomoRunning = false;
+        let pomoCurrentMode = 'work'; // work hoặc break
+
+        function renderHabitsAndCalendar() {
+            // Render habits list
+            const container = document.getElementById('habits-container');
+            container.innerHTML = appData.habits.map((h, idx) => `
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border dark:border-slate-700">
+                    <label class="flex items-center gap-3 cursor-pointer flex-1">
+                        <input type="checkbox" ${h.done ? 'checked' : ''} onchange="toggleHabitStatus(${idx})" class="w-4 h-4 rounded text-primary focus:ring-primary accent-primary">
+                        <span class="text-sm font-semibold ${h.done ? 'line-through text-slate-400' : ''}">${h.text}</span>
+                    </label>
+                    <button onclick="deleteHabit(${idx})" class="text-slate-400 hover:text-red-500 transition ml-2"><i class="fa-solid fa-times text-sm"></i></button>
+                </div>
+            `).join('');
+
+            // Render Calendar simple events
+            const calBox = document.getElementById('calendar-events-container');
+            calBox.innerHTML = appData.calendarEvents.map(e => {
+                let badgeClr = 'bg-blue-100 text-blue-600';
+                if(e.type === 'thi') badgeClr = 'bg-red-100 text-red-600';
+                if(e.type === 'truc') badgeClr = 'bg-orange-100 text-orange-600';
+                return `
+                    <div class="flex gap-4 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition items-center">
+                        <div class="px-3 py-1.5 rounded-xl font-black text-xs ${badgeClr} text-center min-w-[55px]">${e.date}</div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold line-clamp-1">${e.title}</h4>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">${e.type}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleHabitStatus(idx) {
+            appData.habits[idx].done = !appData.habits[idx].done;
+            if(appData.habits[idx].done) gainXP(15);
+            save();
+        }
+
+        function addHabit() {
+            const txt = prompt("Nhập thói quen học tập cần duy trì (Vd: Ôn 20 câu hỏi nhi khoa):");
+            if(txt) { appData.habits.push({ id: Date.now(), text: txt, done: false }); save(); }
+        }
+
+        function deleteHabit(idx) {
+            appData.habits.splice(idx, 1);
+            save();
+        }
+
+        // Pomodoro Countdown Mechanism
+        function togglePomodoro() {
+            const btn = document.getElementById('pomo-btn-start');
+            if (isPomoRunning) {
+                clearInterval(pomodoroInterval);
+                isPomoRunning = false;
+                btn.innerText = "Tiếp tục";
+                btn.className = "px-4 py-2 bg-primary text-white font-bold rounded-xl text-sm";
+            } else {
+                isPomoRunning = true;
+                btn.innerText = "Tạm dừng";
+                btn.className = "px-4 py-2 bg-yellow-500 text-white font-bold rounded-xl text-sm";
+                pomodoroInterval = setInterval(() => {
+                    if (pTimeRemaining > 0) {
+                        pTimeRemaining--;
+                        updatePomodoroUI();
+                    } else {
+                        clearInterval(pomodoroInterval);
+                        isPomoRunning = false;
+                        if (pomoCurrentMode === 'work') {
+                            alert("🎉 Chúc mừng bạn đã hoàn thành 25 phút học tập tập trung! Hãy nghỉ ngơi 5 phút.");
+                            gainXP(25);
+                            pomoCurrentMode = 'break';
+                            pTimeRemaining = 5 * 60;
+                            document.getElementById('pomo-status').innerText = "Thời gian nghỉ giải lao ngắn";
+                            document.getElementById('pomo-status').className = "text-xs font-semibold text-green-500 mb-4";
+                        } else {
+                            alert("⏱ Hết thời gian nghỉ giải lao. Bắt đầu phiên làm việc mới thôi bác sĩ!");
+                            pomoCurrentMode = 'work';
+                            pTimeRemaining = 25 * 60;
+                            document.getElementById('pomo-status').innerText = "Thời gian tập trung học";
+                            document.getElementById('pomo-status').className = "text-xs font-semibold text-primary mb-4";
+                        }
+                        btn.innerText = "Bắt đầu";
+                        updatePomodoroUI();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetPomodoro() {
+            clearInterval(pomodoroInterval);
+            isPomoRunning = false;
+            pomoCurrentMode = 'work';
+            pTimeRemaining = 25 * 60;
+            document.getElementById('pomo-btn-start').innerText = "Bắt đầu";
+            document.getElementById('pomo-btn-start').className = "px-4 py-2 bg-primary text-white font-bold rounded-xl text-sm";
+            document.getElementById('pomo-status').innerText = "Thời gian tập trung học";
+            document.getElementById('pomo-status').className = "text-xs font-semibold text-primary mb-4";
+            updatePomodoroUI();
+        }
+
+        function updatePomodoroUI() {
+            const mins = Math.floor(pTimeRemaining / 60);
+            const secs = pTimeRemaining % 60;
+            document.getElementById('pomo-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        /* --- MODULE: QUẢN LÝ ĐIỂM CHI TIẾT & HỒ SƠ NĂNG LỰC --- */
+        function renderGradesManagement() {
+            const body = document.getElementById('grades-table-body');
+            body.innerHTML = appData.gradesList.map((g, idx) => {
+                const scale4 = convertGrade10ToScale4(g.grade10);
+                return `
+                    <tr class="border-b dark:border-slate-700/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                        <td class="py-3.5 font-bold text-slate-700 dark:text-slate-200">${g.name}</td>
+                        <td class="py-3.5 text-center text-slate-500">${g.credits} tín</td>
+                        <td class="py-3.5 text-center font-bold text-slate-800 dark:text-white">${g.grade10.toFixed(1)}</td>
+                        <td class="py-3.5 text-center font-bold text-primary">${scale4.toFixed(2)}</td>
+                        <td class="py-3.5 text-center">
+                            <button onclick="deleteGradeItem(${idx})" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Tính toán GPA lý thuyết động
+            let totalCredits = 0;
+            let totalWeight10 = 0;
+            let totalWeight4 = 0;
+            appData.gradesList.forEach(item => {
+                totalCredits += item.credits;
+                totalWeight10 += item.grade10 * item.credits;
+                totalWeight4 += convertGrade10ToScale4(item.grade10) * item.credits;
+            });
+            
+            const finalTheoryAvg10 = totalCredits === 0 ? 0 : totalWeight10 / totalCredits;
+            const finalTheoryAvg4 = totalCredits === 0 ? 0 : totalWeight4 / totalCredits;
+
+            // Đồng bộ điểm lý thuyết sang cấu trúc lưu trữ chung
+            appData.grades.theory = finalTheoryAvg10;
+            
+            // Cập nhật lên Hồ sơ năng lực và Dashboard
+            document.getElementById('comp-theory').innerText = finalTheoryAvg10.toFixed(1);
+            
+            const practiceScore = appData.grades.practice || 7.5; // Điểm thực hành lấy từ module kỹ năng
+            const caseScore = appData.grades.case || 0; // Điểm case lấy từ module tình huống lâm sàng
+
+            document.getElementById('comp-practice').innerText = practiceScore.toFixed(1);
+            document.getElementById('comp-case').innerText = caseScore.toFixed(1);
+
+            const totalAverage10 = (finalTheoryAvg10 + practiceScore + caseScore) / (caseScore > 0 ? 3 : 2);
+            const totalAverage4 = (finalTheoryAvg4 + convertGrade10ToScale4(practiceScore) + (caseScore > 0 ? convertGrade10ToScale4(caseScore) : 0)) / (caseScore > 0 ? 3 : 2);
+
+            document.getElementById('comp-gpa10').innerText = totalAverage10.toFixed(1);
+            document.getElementById('comp-gpa4').innerText = totalAverage4.toFixed(2);
+            document.getElementById('stat-gpa').innerText = totalAverage4.toFixed(2);
+
+            updateAIEvaluationText(totalAverage4, finalTheoryAvg10, practiceScore);
+        }
+
+        function convertGrade10ToScale4(g10) {
+            if (g10 >= 8.5) return 4.0;
+            if (g10 >= 8.0) return 3.5;
+            if (g10 >= 7.0) return 3.0;
+            if (g10 >= 6.5) return 2.5;
+            if (g10 >= 5.5) return 2.0;
+            if (g10 >= 5.0) return 1.5;
+            if (g10 >= 4.0) return 1.0;
+            return 0.0;
+        }
+
+        function updateAIEvaluationText(gpa4, theory, practice) {
+            const box = document.getElementById('ai-evaluation-box');
+            let txt = [];
+            
+            if(theory < 7.0) txt.push(`<div>⚠️ <b>Lý thuyết chưa vững:</b> Điểm trung bình lý thuyết (${theory.toFixed(1)}) của bạn đang ở mức trung bình. AI gợi ý bạn nên truy cập lại <b>Module Lý Thuyết</b> để đọc kỹ tài liệu Giải phẫu/Sinh lý và kích hoạt hệ thống sinh câu hỏi tự động.</div>`);
+            if(practice < 8.0) txt.push(`<div>⚠️ <b>Kỹ năng thực hành yếu:</b> Năng lực thực hành hiện tại đang đạt điểm số ${practice.toFixed(1)}. Hãy mở <b>Module Thực Hành</b>, kiểm tra bảng kiểm checklist của kỹ năng chưa đạt sao cao để rèn luyện thêm.</div>`);
+            
+            // Tìm kỹ năng có số sao thấp nhất (< 3) để cảnh báo cụ thể
+            const weakSkill = appData.skills.find(s => s.rating < 3);
+            if(weakSkill) txt.push(`<div>📍 <b>Trọng tâm lâm sàng:</b> Kỹ năng <b>"${weakSkill.name}"</b> đang được đánh giá dưới mức trung bình độc lập. Cần ôn lại ngay các bước checklist cốt lõi.</div>`);
+
+            if(txt.length === 0) txt.push(`<div>✅ <b>Tuyệt vời:</b> Chỉ số năng lực học tập Y khoa toàn diện cân bằng cực tốt. Bạn đang có lộ trình rất đúng đắn để hướng tới học bổng.</div>`);
+            box.innerHTML = txt.join('<br>');
+        }
+
+        function openAddGradeModal() { document.getElementById('add-grade-modal').classList.remove('hidden'); }
+        function closeAddGradeModal() { document.getElementById('add-grade-modal').classList.add('hidden'); }
+        
+        function submitNewGrade() {
+            const name = document.getElementById('modal-subject-name').value;
+            const credits = parseInt(document.getElementById('modal-subject-credits').value);
+            const grade10 = parseFloat(document.getElementById('modal-subject-grade').value);
+
+            if(name && credits && !isNaN(grade10)) {
+                appData.gradesList.push({ id: Date.now(), name, credits, grade10 });
+                gainXP(20);
+                save();
+                closeAddGradeModal();
+            }
+        }
+
+        function deleteGradeItem(idx) {
+            appData.gradesList.splice(idx, 1);
+            save();
+        }
+
+        function calculateGPAPrediction() {
+            const target = parseFloat(document.getElementById('target-gpa-input').value);
+            if(isNaN(target) || target < 0 || target > 4) return alert("Vui lòng nhập mục tiêu GPA hợp lệ từ 0.0 đến 4.0");
+            
+            appData.targetGPA = target;
+            localStorage.setItem('medProDataV3', JSON.stringify(appData));
+
+            let totalCredits = 0;
+            let totalWeight4 = 0;
+            appData.gradesList.forEach(item => {
+                totalCredits += item.credits;
+                totalWeight4 += convertGrade10ToScale4(item.grade10) * item.credits;
+            });
+
+            const currentGPA4 = totalCredits === 0 ? 0 : totalWeight4 / totalCredits;
+            const remainingCreditsAssume = 15; // Giả sử học kỳ này còn 15 tín chỉ nữa cần hoàn thành
+            
+            // Công thức tính toán điểm trung bình cần đạt cho số tín chỉ còn lại
+            // Target = (TotalWeightCurrent + NeededWeight) / (TotalCreditsCurrent + RemainingCredits)
+            const neededWeight = (target * (totalCredits + remainingCreditsAssume)) - totalWeight4;
+            const neededAvgGrade4 = neededWeight / remainingCreditsAssume;
+
+            const resBox = document.getElementById('prediction-result-box');
+            if(neededAvgGrade4 > 4.0) {
+                resBox.innerHTML = `❌ <b>Mức độ: Bất khả thi trong kỳ này.</b> Để đạt mục tiêu GPA ${target.toFixed(2)}, bạn cần điểm trung bình các học phần tới là <b>${neededAvgGrade4.toFixed(2)}</b> (Vượt quá thang 4.0). Hãy hạ thấp kỳ vọng hoặc kéo dài số tín chỉ tích lũy.`;
+            } else if (neededAvgGrade4 <= 0) {
+                resBox.innerHTML = `🎉 <b>Mức độ: Cực kỳ an toàn!</b> Bạn đã tích lũy đủ điểm số vững chắc. Các môn tiếp theo chỉ cần hoàn thành ở mức trung bình cơ sở là đạt mục tiêu ${target.toFixed(2)}.`;
+            } else {
+                const completionRate = Math.min(100, Math.round((currentGPA4 / target) * 100));
+                resBox.innerHTML = `🎯 <b>Mức độ hoàn thành hiện tại: ${completionRate}%</b><br>Để cán đích GPA <b>${target.toFixed(2)}</b>, tính toán trên 15 tín chỉ học phần kế tiếp, bạn bắt buộc cần đạt điểm trung bình tối thiểu là <b>${neededAvgGrade4.toFixed(2)} / 4.0</b> (Tương đương điểm hệ 10 khoảng từ <b>${(neededAvgGrade4 * 2 + 1).toFixed(1)}</b> trở lên).`;
+            }
+        }
+
+        /* --- MODULE: TRỢ LÝ Y KHOA MEDAI CHATBOT ENGINE --- */
+        const aiKnowledgeBaseResponses = {
+            "hướng dẫn khám gan.": `
+                <div class="space-y-2">
+                    <p class="font-bold text-blue-600 dark:text-blue-400">📋 QUY TRÌNH THĂM KHÁM GAN LÂM SÀNG CHUẨN Y KHOA:</p>
+                    <p><b>1. Nhìn:</b> Đánh giá hình dạng lồng ngực và vùng hạ sườn phải. Tìm kiếm các dấu hiệu tuần hoàn bàng hệ, dấu sao mạch (spider nevi) hoặc tình trạng báng bụng, vàng da tắc mật.</p>
+                    <p><b>2. Sờ (Quan trọng nhất):</b> Bắt đầu từ hố chậu phải di chuyển dần lên hạ sườn phải theo nhịp thở của bệnh nhân. Xác định bờ dưới của gan (mềm, chắc hay cứng, bờ tù hay sắc, bề mặt nhẵn hay gồ ghề cục).</p>
+                    <p><b>3. Gõ:</b> Gõ dọc theo đường trung đòn phải để xác định bờ trên của gan (thường ở khoảng liên sườn V) và bờ dưới. Đo chiều cao gan (bình thường từ 8 - 12cm).</p>
+                    <p><b>4. Nghe:</b> Tìm tiếng thổi tâm thu trong ung thư gan (vùng tăng sinh mạch) hoặc tiếng cọ màng bụng trong viêm quanh gan.</p>
+                </div>`,
+            "tạo 5 câu hỏi trắc nghiệm copd kèm đáp án.": `
+                <div class="space-y-2">
+                    <p class="font-bold text-blue-600 dark:text-blue-400">📝 BỘ CÂU HỎI TRẮC NGHIỆM LÂM SÀNG BỆNH LÝ COPD (THEO GOLD):</p>
+                    <p><b>Câu 1:</b> Tiêu chuẩn vàng để chẩn đoán xác định bệnh Phổi tắc nghẽn mạn tính (COPD) trên hô hấp ký là gì?<br>
+                    <i>Đáp án: FEV1/FVC &lt; 0.70 sau nghiệm pháp giãn phế quản.</i></p>
+                    <p><b>Câu 2:</b> Thuốc giãn phế quản được ưu tiên lựa chọn hàng đầu trong điều trị cắt cơn đợt cấp COPD là nhóm nào?<br>
+                    <i>Đáp án: SABA (Kháng Beta2 tác dụng ngắn) phối hợp hoặc không phối hợp với SAMA.</i></p>
+                    <p><b>Câu 3:</b> Triệu chứng cơ năng cốt lõi đặc trưng nhất của COPD là?<br>
+                    <i>Đáp án: Khó thở tiến triển nặng dần theo thời gian và tăng lên khi gắng sức.</i></p>
+                </div>`,
+            "giải thích các bước đọc khí máu động mạch.": `
+                <div class="space-y-2">
+                    <p class="font-bold text-blue-600 dark:text-blue-400">🩸 LỘ TRÌNH 3 BƯỚC PHÂN TÍCH KHÍ MÁU ĐỘNG MẠCH (ABG):</p>
+                    <p><b>Bước 1: Đánh giá pH máu để xác định trạng thái nhiễm toan hay kiềm.</b><br> Bình thường pH = 7.35 - 7.45. Nếu &lt; 7.35 là nhiễm toan; nếu &gt; 7.45 là nhiễm kiềm.</p>
+                    <p><b>Bước 2: Đánh giá áp lực riêng phần CO2 (pCO2) - Đại diện cho Hô hấp.</b><br> Bình thường pCO2 = 35 - 45 mmHg. Nếu pH giảm kèm pCO2 tăng thì đây là Toan hô hấp. Nếu pH tăng kèm pCO2 giảm thì đây là Kiềm hô hấp.</p>
+                    <p><b>Bước 3: Đánh giá nồng độ Bicarbonate (HCO3-) - Đại diện cho Chuyển hóa.</b><br> Bình thường HCO3- = 22 - 26 mEq/L. Nếu pH giảm kèm HCO3- giảm thì đây là Toan chuyển hóa. Nếu pH tăng kèm HCO3- tăng thì đây là Kiềm chuyển hóa.</p>
+                </div>`,
+            "tạo một ca lâm sàng viêm tụy cấp mức độ trung bình.": `
+                <div class="space-y-2">
+                    <p class="font-bold text-blue-600 dark:text-blue-400">🧬 MÔ PHỎNG CA LÂM SÀNG: VIÊM TỤY CẤP</p>
+                    <p><b>Bệnh cảnh:</b> Bệnh nhân nam, 42 tuổi, nhập viện vì đau bụng dữ dội vùng thượng vị sau một bữa ăn nhiều dầu mỡ và uống rượu bia. Đau khởi phát đột ngột, lan ra sau lưng, kèm nôn ói nhiều lần nhưng không bớt đau.</p>
+                    <p><b>Khám lâm sàng:</b> Bụng trướng nhẹ, ấn đau dữ dội vùng thượng vị, phản ứng thành bụng âm tính, không có dấu bầm tím quanh rốn (Cullen) hay hông (Grey-Turner).</p>
+                    <p><b>Xét nghiệm đề xuất:</b> Định lượng Amylase và Lipase máu tăng cao gấp 4 lần giới hạn trên bình thường. Siêu âm thấy nhu mô tụy sưng nề lớn, giảm âm, có dịch quanh tụy.</p>
+                </div>`
+        };
+
+        function triggerAICmd(cmdText) {
+            document.getElementById('chat-input-field').value = cmdText;
+            sendChatMessage();
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input-field');
+            const userTxt = input.value.trim();
+            if(!userTxt) return;
+
+            const box = document.getElementById('chat-messages-box');
+            
+            // Render User Message
+            box.innerHTML += `
+                <div class="flex gap-3 max-w-[85%] ml-auto justify-end">
+                    <div class="p-3.5 bg-primary text-white rounded-2xl text-sm font-medium leading-relaxed">${userTxt}</div>
+                </div>
+            `;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            // Simulate AI Generating Response
+            setTimeout(() => {
+                const key = userTxt.toLowerCase();
+                let aiAns = `<div>Cảm ơn bác sĩ đã đặt câu hỏi. Vấn đề <i>"${userTxt}"</i> đang được hệ thống phân tích đối chiếu với phác đồ điều trị của Bộ Y Tế. Do đây là môi trường mô phỏng cục bộ, hãy thử nhấp vào các nút lệnh gợi ý nhanh phía dưới để nhận phản hồi cấu trúc y khoa mẫu chuẩn xác nhất.</div>`;
+                
+                if(aiKnowledgeBaseResponses[key]) {
+                    aiAns = aiKnowledgeBaseResponses[key];
+                }
+
+                box.innerHTML += `
+                    <div class="flex gap-3 max-w-[85%]">
+                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-black">AI</div>
+                        <div class="p-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-sm font-medium leading-relaxed">${aiAns}</div>
+                    </div>
+                `;
+                box.scrollTop = box.scrollHeight;
+                gainXP(15);
+            }, 800);
+        }
+
+        /* --- MODULE: GAMIFICATION SYSTEMS (XP, LEVEL, BADGES) --- */
+        function gainXP(amount) {
+            appData.xp += amount;
+            let currentLevel = Math.floor(appData.xp / 100) + 1;
+            let xpInCurrentLevel = appData.xp % 100;
+
+            // Kiểm tra mở khóa huy hiệu tự động dựa trên XP
+            if (appData.xp >= 100) unlockBadgeSystemItem(2); // Mở khóa huy hiệu chuyên cần
+            if (appData.xp >= 200) unlockBadgeSystemItem(3); // Mở khóa huy hiệu thành thạo khám bụng
+
+            // Lưu trạng thái mới
+            localStorage.setItem('medProDataV3', JSON.stringify(appData));
+            
+            // Cập nhật giao diện thanh tiến trình nhanh
+            document.getElementById('user-level').innerText = currentLevel;
+            document.getElementById('gamify-lvl').innerText = currentLevel;
+            document.getElementById('xp-display').innerText = `${xpInCurrentLevel} / 100 XP`;
+            document.getElementById('xp-progress-bar').style.width = `${xpInCurrentLevel}%`;
+            document.getElementById('gamify-xp-summary').innerText = `Tích lũy ${100 - xpInCurrentLevel} XP nữa để thăng cấp lên LV ${currentLevel + 1}`;
+        }
+
+        const badgeDefinitions = [
+            { id: 1, title: "Khởi Đầu Nan", desc: "Khởi động ứng dụng học tập thành công.", icon: "fa-baby-carriage", unlocked: true },
+            { id: 2, title: "Bác Sĩ Chuyên Cần", desc: "Tích lũy đạt mốc trên 100 XP học tập liên tục.", icon: "fa-calendar-check", unlocked: false },
+            { id: 3, title: "Thành Thạo Khám Bụng", desc: "Giải quyết xuất sắc ca mô phỏng lâm sàng tiêu hóa.", icon: "fa-stethoscope", unlocked: false }
+        ];
+
+        function renderGamificationBadges() {
+            const container = document.getElementById('badges-grid-container');
+            container.innerHTML = badgeDefinitions.map(b => {
+                // Kiểm tra xem trong localstorage hoặc logic đã được mở chưa
+                let isUnlocked = b.unlocked;
+                if(b.id === 2 && appData.xp >= 100) isUnlocked = true;
+                if(b.id === 3 && appData.xp >= 200) isUnlocked = true;
+
+                return `
+                    <div class="p-4 rounded-2xl border flex items-center gap-4 transition ${isUnlocked ? 'bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border-blue-200 dark:from-slate-800 dark:border-slate-700' : 'bg-slate-50/40 opacity-40 border-dashed dark:bg-slate-900'}" >
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl ${isUnlocked ? 'bg-primary text-white shadow-md':'bg-slate-200 text-slate-400 dark:bg-slate-700'}">
+                            <i class="fa-solid ${b.icon}"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm ${isUnlocked?'text-slate-800 dark:text-white':'text-slate-400'}">${b.title}</h4>
+                            <p class="text-xs text-slate-400 font-medium mt-0.5">${b.desc}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function unlockBadgeSystemItem(id) {
+            // Đẩy một thông báo mới vào màn hình thông báo khi mở khóa danh hiệu
+            const badge = badgeDefinitions.find(b => b.id === id);
+            if(badge) {
+                const checkedExist = appData.notifications.find(n => n.text.includes(badge.title));
+                if(!checkedExist) {
+                    appData.notifications.unshift({ id: Date.now(), text: `🎉 Chúc mừng! Bạn vừa mở khóa thành công Huy hiệu danh giá: "${badge.title}".`, read: false });
+                }
+            }
+        }
+
+        /* --- MODULE: TRUNG TÂM THÔNG BÁO NHẮC NHỞ --- */
+        function renderNotificationsCenter() {
+            const box = document.getElementById('notifications-wrapper-box');
+            const unreadCount = appData.notifications.filter(n => !n.read).length;
+            
+            const badge = document.getElementById('notif-badge');
+            if(unreadCount > 0) {
+                badge.innerText = unreadCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            box.innerHTML = appData.notifications.map((n, idx) => `
+                <div class="p-4 rounded-xl border transition flex items-start gap-3 ${n.read ? 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/60 opacity-70':'bg-blue-50/30 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900'}" onclick="markSingleNotificationRead(${idx})">
+                    <div class="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0 ${n.read ? 'invisible':''}"></div>
+                    <div class="flex-1 text-xs font-semibold leading-relaxed">
+                        <p class="${n.read ? 'text-slate-500':'text-slate-800 dark:text-slate-100'}" >${n.text}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function markSingleNotificationRead(idx) {
+            appData.notifications[idx].read = true;
+            save();
+        }
+
+        function markAllNotificationsAsRead() {
+            appData.notifications.forEach(n => n.read = true);
+            save();
+        }
+
+        /* --- THEO DÕI MODULE LÝ THUYẾT & THƯ VIỆN TÀI LIỆU (FILTER) --- */
+        function renderTheoryLibrary() {
+            const libContainer = document.getElementById('theory-library');
+            libContainer.innerHTML = appData.library.map(doc => `
+                <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl flex items-center gap-4 hover:ring-2 ring-primary transition cursor-pointer border dark:border-slate-700 library-item-card" data-tag="${doc.tag}" data-title="${doc.title}">
+                    <div class="w-11 h-11 bg-white dark:bg-darkcard rounded-xl border dark:border-slate-700 flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+                        <i class="fa-solid ${doc.icon} text-lg"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h4 class="font-bold text-sm truncate">${doc.title}</h4>
+                        <span class="text-[9px] bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300 px-2 py-0.5 rounded-md font-bold inline-block mt-1">${doc.tag}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterLibrary() {
+            const searchVal = document.getElementById('lib-search').value.toLowerCase();
+            const filterVal = document.getElementById('lib-filter').value;
+            const cards = document.querySelectorAll('.library-item-card');
+
+            cards.forEach(card => {
+                const title = card.getAttribute('data-title').toLowerCase();
+                const tag = card.getAttribute('data-tag');
+                
+                const matchesSearch = title.includes(searchVal) || tag.toLowerCase().includes(searchVal);
+                const matchesFilter = filterVal === 'all' || tag === filterVal;
+
+                if(matchesSearch && matchesFilter) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
                 }
             });
         }
 
-        // Initialize App
-        renderNav();
-        refreshUI();
-        initChart();
+        /* --- MODULE THỰC HÀNH KỸ NĂNG LÂM SÀNG --- */
+        function renderPracticeSkillsList() {
+            const container = document.getElementById('skills-list');
+            document.getElementById('stat-skills').innerText = appData.skills.length;
+
+            container.innerHTML = appData.skills.map((s, idx) => `
+                <div class="bg-white dark:bg-darkcard p-5 rounded-3xl border dark:border-slate-700 shadow-sm flex flex-col justify-between" >
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-black text-base text-slate-800 dark:text-white">${s.name}</h4>
+                            <button onclick="deleteSkillItem(${idx})" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                        <div class="flex text-yellow-400 gap-1 text-sm mb-4">
+                            ${Array(5).fill(0).map((_, i) => `<i class="${i < s.rating ? 'fa-solid' : 'fa-regular'} fa-star cursor-pointer" onclick="updateSkillRating(${idx}, ${i+1})"></i>`).join('')}
+                        </div>
+                        <div class="space-y-1.5 border-t dark:border-slate-700 pt-3">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Bảng kiểm Checklist quy trình</p>
+                            ${s.steps.map(step => `
+                                <div class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                    <i class="fa-solid fa-square-check text-green-500"></i> <span class="line-clamp-1">${step}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="mt-5 pt-2 flex gap-2">
+                        <button class="flex-1 bg-blue-50 dark:bg-blue-950/40 text-primary dark:text-blue-300 py-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition"><i class="fa-brands fa-youtube mr-1 text-red-500"></i> Video bài giảng</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateSkillRating(idx, score) {
+            appData.skills[idx].rating = score;
+            // Nếu thành thạo kỹ năng khám bụng đạt 5 sao, cộng nhiều điểm thưởng
+            if(appData.skills[idx].name.includes("khám bụng") && score === 5) gainXP(50);
+            save();
+        }
+
+        function addSkill() {
+            const name = prompt("Nhập tên kỹ năng lâm sàng mới cần rèn luyện:");
+            if(name) {
+                appData.skills.push({ id: Date.now(), name, rating: 1, steps: ["Chuẩn bị dụng cụ/Bác sĩ vô khuẩn", "Tiến hành đúng kỹ thuật", "Thu dọn dụng cụ và ghi hồ sơ bệnh án"] });
+                save();
+            }
+        }
+
+        function deleteSkillItem(idx) {
+            appData.skills.splice(idx, 1);
+            save();
+        }
+
+        /* --- PHƯƠNG THỨC LÀM MỚI ĐỒNG BỘ GIAO DIỆN (REFRESH UI) --- */
+        function refreshUI() {
+            // Dashboard
+            document.getElementById('quote-display').innerText = `"${appData.quote}"`;
+            renderDashboardTodoList();
+
+            // Kỹ năng, thói quen & Học phần điểm
+            renderTheoryLibrary();
+            renderPracticeSkillsList();
+            renderHabitsAndCalendar();
+            renderGradesManagement();
+            renderGamificationBadges();
+            renderNotificationsCenter();
+        }
+
+        /* --- KHỞI TẠO HỆ THỐNG BIỂU ĐỒ (CHART ENGINE) --- */
+        let dashboardChartObj = null;
+        let gradeChartObj = null;
+
+        function initChartsEngine() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const axisColor = isDark ? '#475569' : '#cbd5e1';
+
+            // 1. Biểu đồ tiến độ giờ học tuần
+            const ctxDash = document.getElementById('mainChart');
+            if(ctxDash) {
+                dashboardChartObj = new Chart(ctxDash, {
+                    type: 'line',
+                    data: {
+                        labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+                        datasets: [{
+                            label: 'Số giờ học', data: [2.5, 4, 3.2, 5, 2, 6.5, 4],
+                            borderColor: '#2563eb', tension: 0.35, fill: true,
+                            backgroundColor: 'rgba(37, 99, 235, 0.05)', borderWidth: 3
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            }
+
+            // 2. Biểu đồ cột tiến trình điểm GPA qua các năm
+            const ctxGrade = document.getElementById('gpaChart');
+            if(ctxGrade) {
+                gradeChartObj = new Chart(ctxGrade, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Năm 1', 'Năm 2', 'Năm 3 (Kỳ 1)'],
+                        datasets: [{
+                            label: 'GPA Hệ 4', data: [3.12, 3.28, 3.41],
+                            backgroundColor: '#2563eb', borderRadius: 6, barThickness: 18
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { min: 0, max: 4 } }
+                    }
+                });
+            }
+        }
+
+        /* --- KHỞI CHẠY KHÔNG GIAN ỨNG DỤNG LÚC LOAD TRANG --- */
+        window.onload = () => {
+            renderSidebarMenu();
+            refreshUI();
+            initChartsEngine();
+            renderClinicalCasesModule();
+            gainXP(0); // Đồng bộ cấp độ hiển thị ban đầu
+        };
     </script>
 </body>
 </html>
