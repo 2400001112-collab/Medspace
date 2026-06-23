@@ -1,0 +1,1266 @@
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { 
+  Home, BookOpen, Activity, Stethoscope, CheckSquare, 
+  BarChart2, Bot, Trophy, Bell, Sun, Moon, Plus, Trash2, 
+  Upload, Play, Star, CheckCircle, Clock, UserCheck, Menu, X, 
+  AlertTriangle, Target, Search, FileText, Edit2, Check, Save,
+  RotateCcw, Calendar, Book, MessageSquare, Info, AlertCircle, Video, List, Download, Key
+} from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { 
+  getFirestore, collection, doc, setDoc, getDoc, updateDoc, 
+  deleteDoc, onSnapshot, query, addDoc, serverTimestamp 
+} from 'firebase/firestore';
+
+// ============================================================================
+// FIREBASE & AI CONFIGURATION
+// ============================================================================
+const firebaseConfig = typeof __firebase_config !== 'undefined' 
+  ? JSON.parse(__firebase_config) 
+  : { apiKey: "mock", authDomain: "mock", projectId: "mock" };
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'medispace-v7-prod';
+
+// Lấy API Key từ LocalStorage để AI có thể hoạt động thực tế
+const getSavedApiKey = () => localStorage.getItem('gemini_api_key') || "";
+
+const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return await res.json();
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchWithRetry(url, options, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+};
+
+const callGeminiAPI = async (prompt, systemInstruction = "Bạn là chuyên gia Y khoa.") => {
+  const currentKey = getSavedApiKey();
+  if (!currentKey) return generateLocalFallbackResponse(prompt);
+  
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentKey}`;
+  try {
+    const data = await fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemInstruction }] } })
+    });
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Lỗi trích xuất dữ liệu từ AI.";
+  } catch (error) {
+    return "Lỗi kết nối máy chủ AI. Vui lòng kiểm tra API Key hoặc kết nối mạng.";
+  }
+};
+
+const getTodayStr = () => new Date().toISOString().split('T')[0];
+const extractYouTubeID = (url) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+// ============================================================================
+// LOCAL FALLBACK AI (KHI CHƯA CÓ API KEY)
+// ============================================================================
+function generateLocalFallbackResponse(prompt) {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("khám gan")) return "### Hướng dẫn Khám Gan Lâm Sàng (OSCE)\n1. **Nhìn**: Quan sát sự di động của hạ sườn phải theo nhịp thở, tìm tuần hoàn bàng hệ, vàng da.\n2. **Sờ**: Từ hố chậu phải lên hạ sườn phải. Xác định bờ dưới gan, mật độ, bề mặt, nghiệm pháp Murphy.\n3. **Gõ**: Xác định bờ trên gan, đo chiều cao gan.\n4. **Nghe**: Tìm tiếng cọ màng gan.";
+  if (lower.includes("copd") || lower.includes("hô hấp")) return "### Bệnh Phổi Tắc Nghẽn Mạn Tính (COPD)\n- **Định nghĩa**: Tắc nghẽn luồng khí thở ra không hồi phục hoàn toàn.\n- **Triệu chứng**: Ho khạc đờm mạn tính, khó thở tiến triển.\n- **Khám**: Lồng ngực hình thùng, gõ vang, rì rào phế nang giảm, ran rít, ran ngáy.";
+  if (lower.includes("tóm tắt")) return `### TÓM TẮT Y KHOA\n\n1. **Khái niệm then chốt**: Hướng chẩn đoán dựa trên lâm sàng và cận lâm sàng.\n2. **Điểm cốt lõi**: Khai thác bệnh sử kỹ, khám thực thể toàn diện.\n*Từ khóa*: Chẩn đoán, Cận lâm sàng, Phác đồ.`;
+  if (lower.includes("trắc nghiệm") || lower.includes("câu hỏi")) return `### BỘ CÂU HỎI ÔN TẬP\n\n**Câu 1:** Triệu chứng điển hình của Nhồi máu cơ tim cấp?\nA. Đau thắt ngực lan lên hàm/vai trái\nB. Đau thượng vị từng cơn\n*Đáp án:* A\n\n**Câu 2:** Chỉ số đường huyết đói chẩn đoán Đái tháo đường là ≥ 7.0 mmol/L. (Đúng/Sai)\n*Đáp án:* Đúng.`;
+  if (lower.includes("flashcard")) return `### FLASHCARD\n\n- **Q**: Dấu hiệu Murphy dương tính trong bệnh gì?\n- **A**: Viêm túi mật cấp.\n---\n- **Q**: Thuốc chẹn Beta chống chỉ định tuyệt đối khi nào?\n- **A**: Hen phế quản, nhịp chậm xoang nặng.`;
+  
+  return `[CHẾ ĐỘ NGOẠI TUYẾN] Bạn vừa hỏi: "${prompt}".\n\nHệ thống hiện đang chạy ở chế độ Demo vì chưa có API Key. Vui lòng bấm vào nút "Cấu hình AI" bên trên để nhập Gemini API Key thật của bạn.`;
+}
+
+const ToastContext = React.createContext();
+
+// ============================================================================
+// MAIN APP COMPONENT
+// ============================================================================
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  const [toasts, setToasts] = useState([]);
+  const showToast = useCallback((message, type = 'success') => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
+
+  const [data, setData] = useState({
+    tasks: [], banners: [], skills: [], grades: [], weaks: [], 
+    notifications: [], habits: [], events: [], theoryDocs: [], cases: [], aiChats: []
+  });
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+        else await signInAnonymously(auth);
+      } catch (err) { console.error(err); }
+    };
+    initAuth();
+    const unsub = onAuthStateChanged(auth, (usr) => { setUser(usr); if (!usr) setIsLoading(false); });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    setIsLoading(true);
+    const collections = [
+      { name: 'tasks', key: 'tasks' }, { name: 'banners', key: 'banners' }, 
+      { name: 'skills_v2', key: 'skills' }, { name: 'grades', key: 'grades' }, 
+      { name: 'weaks', key: 'weaks' }, { name: 'notifications', key: 'notifications' }, 
+      { name: 'daily_habits', key: 'habits' }, { name: 'calendar_events', key: 'events' }, 
+      { name: 'theory_docs', key: 'theoryDocs' }, { name: 'cases_simulation', key: 'cases' }, 
+      { name: 'ai_chats', key: 'aiChats' }
+    ];
+
+    const unsubs = collections.map(col => 
+      onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, col.name), 
+        (snap) => {
+          setData(prev => ({ ...prev, [col.key]: snap.docs.map(d => ({ id: d.id, ...d.data() })) }));
+          setIsLoading(false);
+        }, 
+        (err) => { console.error(err); setIsLoading(false); }
+      )
+    );
+    return () => unsubs.forEach(unsub => unsub());
+  }, [user]);
+
+  useEffect(() => {
+    if (isDarkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  }, [isDarkMode]);
+
+  if (isLoading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-gray-900 text-blue-600 gap-4">
+      <Stethoscope size={48} className="animate-pulse" />
+      <p className="font-bold text-lg">Đang đồng bộ dữ liệu y khoa...</p>
+    </div>
+  );
+
+  const navItems = [
+    { id: 'dashboard', icon: Home, label: 'Trang chủ' },
+    { id: 'profile', icon: UserCheck, label: 'Hồ sơ năng lực' },
+    { id: 'practice', icon: Activity, label: 'Thư viện Kỹ năng' },
+    { id: 'cases', icon: CheckSquare, label: 'OSCE Lâm sàng' },
+    { id: 'theory', icon: BookOpen, label: 'Lý thuyết & AI' },
+    { id: 'habits', icon: Clock, label: 'Thói quen & Lịch' },
+    { id: 'grades', icon: BarChart2, label: 'Quản lý điểm' },
+    { id: 'ai', icon: Bot, label: 'Giáo sư AI' },
+    { id: 'gamification', icon: Trophy, label: 'Thành tích' }
+  ];
+
+  return (
+    <ToastContext.Provider value={showToast}>
+      <div className={`min-h-screen flex flex-col md:flex-row transition-colors duration-300 ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-slate-50 text-gray-800'}`}>
+        
+        {/* TOAST RENDERER */}
+        <div className="fixed top-4 right-4 z-[999] flex flex-col gap-2 pointer-events-none">
+          {toasts.map(t => (
+            <div key={t.id} className={`p-4 rounded-xl shadow-lg border text-sm font-bold flex items-center gap-3 pointer-events-auto transform transition-all animate-slideUp ${t.type === 'error' ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-900 dark:text-red-200' : 'bg-white border-green-200 text-green-700 dark:bg-gray-800 dark:border-green-900 dark:text-green-400'}`}>
+              {t.type === 'error' ? <AlertCircle size={18}/> : <CheckCircle size={18} />}
+              <span>{t.message}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* MOBILE HEADER */}
+        <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-40">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2"><Menu size={24} /></button>
+          <span className="font-black text-blue-600 dark:text-blue-400 flex items-center gap-1"><Stethoscope size={20} /> MediSpace</span>
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-yellow-500">{isDarkMode ? <Sun size={20} /> : <Moon size={20} />}</button>
+        </header>
+
+        {/* SIDEBAR */}
+        <nav className={`fixed md:sticky top-0 left-0 h-screen w-64 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-blue-100'} border-r flex flex-col justify-between transition-transform duration-300 z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+          <div className="flex flex-col flex-1 overflow-y-auto hide-scrollbar">
+            <div className="p-6 flex items-center justify-between border-b dark:border-gray-700">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400"><Stethoscope size={28} className="animate-pulse" /><h1 className="text-xl font-black">MediSpace</h1></div>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-gray-500"><X size={20} /></button>
+            </div>
+            <div className="p-4 space-y-1">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                return (
+                  <button key={item.id} onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }} className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === item.id ? 'bg-blue-600 text-white shadow-md' : 'hover:bg-blue-50 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'}`}>
+                    <div className="flex items-center gap-3"><Icon size={18} /> <span>{item.label}</span></div>
+                    {item.badge > 0 && <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{item.badge}</span>}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="p-4 border-t dark:border-gray-700">
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-xl border dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-700">
+              {isDarkMode ? <><Sun size={16} className="text-yellow-400"/> Giao diện Sáng</> : <><Moon size={16}/> Giao diện Tối</>}
+            </button>
+          </div>
+        </nav>
+
+        {/* MAIN CONTENT ROUTER */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 h-[calc(100vh-60px)] md:h-screen w-full relative">
+          <div className="max-w-6xl mx-auto pb-20">
+            {activeTab === 'dashboard' && <DashboardModule user={user} data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'profile' && <ProfileModule user={user} data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'practice' && <PracticeModule user={user} data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'cases' && <CasesModule user={user} data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'theory' && <TheoryModule user={user} data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'habits' && <HabitsModule user={user} data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'grades' && <GradesModule user={user} data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'ai' && <AIAssistantModule user={user} data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'gamification' && <GamificationModule data={data} isDarkMode={isDarkMode} />}
+            {activeTab === 'notifications' && <NotificationsModule user={user} data={data} isDarkMode={isDarkMode} />}
+          </div>
+        </main>
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+// ============================================================================
+// MODULE 1: HỒ SƠ NĂNG LỰC Y KHOA (ĐÁNH GIÁ 4 TRỤ CỘT & KẾ HOẠCH)
+// ============================================================================
+const ProfileModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  const { grades, skills, habits, weaks } = data;
+  
+  // Form chi tiết cho Kế hoạch phát triển
+  const [goalForm, setGoalForm] = useState({ name: '', target: '', deadline: '' });
+
+  // --- TÍNH TOÁN 4 TRỤ CỘT NĂNG LỰC CHUẨN XÁC ---
+  const compTheory = useMemo(() => {
+    if (!grades || grades.length === 0) return 0;
+    let tCr = 0, sum = 0;
+    grades.forEach(g => { 
+      const cr = Number(g.credits) || 0;
+      const th = Number(g.theory) || 0;
+      tCr += cr; 
+      sum += th * cr; 
+    });
+    return tCr > 0 ? Math.min(Math.round((sum / tCr) * 10), 100) : 0; // GPA 10 = 100%
+  }, [grades]);
+
+  const compPractice = useMemo(() => {
+    if (!skills || skills.length === 0) return 0;
+    const proficientLevels = ["Có thể thực hiện độc lập", "Thành thạo"];
+    const proficientCount = skills.filter(s => proficientLevels.includes(s.proficiency)).length;
+    return Math.round((proficientCount / skills.length) * 100);
+  }, [skills]);
+
+  const compClinical = useMemo(() => {
+    if (!grades || grades.length === 0) return 0;
+    const solvedCases = grades.filter(g => g.subject && g.subject.includes("OSCE")).length;
+    return Math.min(Math.round((solvedCases / 10) * 100), 100); // Đạt 10 ca = 100%
+  }, [grades]);
+
+  const compLearning = useMemo(() => {
+    if (!habits || habits.length === 0) return 0;
+    const totalStreaks = habits.reduce((acc, h) => acc + (Number(h.streak) || 0), 0);
+    return Math.min(Math.round((totalStreaks / 30) * 100), 100); // 30 ngày kỷ luật = 100%
+  }, [habits]);
+
+  const clinicalReadiness = Math.round((compTheory * 0.3) + (compPractice * 0.3) + (compClinical * 0.3) + (compLearning * 0.1));
+
+  // AI Auto Analysis (Không tính điểm OSCE vào môn yếu)
+  const weakSubjects = (grades || []).filter(g => ((Number(g.theory)+Number(g.practice)+Number(g.clinical))/3) < 6.5 && !g.subject.includes("OSCE"));
+  const weakSkills = (skills || []).filter(s => ["Chưa học", "Đang học"].includes(s.proficiency || "Chưa học"));
+
+  const addGoal = async (e) => {
+    e.preventDefault();
+    if(!goalForm.name.trim()) return;
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'weaks'), { 
+      name: goalForm.name, target: goalForm.target, deadline: goalForm.deadline, completed: false, type: 'goal' 
+    });
+    setGoalForm({ name: '', target: '', deadline: '' }); 
+    showToast("Đã lưu kế hoạch phát triển cá nhân.");
+  };
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      {/* HEADER & READINESS GAUGE */}
+      <div className={`p-8 rounded-3xl border shadow-lg flex flex-col md:flex-row items-center gap-8 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-blue-50'}`}>
+        <div className="relative w-48 h-48 flex-shrink-0">
+          <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+            <path className="text-gray-200 dark:text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+            <path className={`${clinicalReadiness >= 80 ? 'text-green-500' : clinicalReadiness >= 50 ? 'text-blue-500' : 'text-orange-500'}`} strokeDasharray={`${clinicalReadiness}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-4xl font-black">{clinicalReadiness}%</span>
+            <span className="text-[9px] uppercase font-bold text-gray-500 text-center mt-1 leading-tight">Sẵn sàng<br/>Lâm sàng</span>
+          </div>
+        </div>
+        <div className="flex-1 text-center md:text-left">
+          <h2 className="text-2xl font-black text-blue-600 dark:text-blue-400 mb-2">Hồ Sơ Năng Lực Chuẩn Đầu Ra</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+            Hệ thống phân tích tự động dữ liệu học tập lý thuyết, sự tiến bộ kỹ năng thực hành, số ca lâm sàng OSCE đã giải quyết và kỷ luật thói quen hằng ngày.
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-2">
+            <span className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 text-xs font-bold rounded-full">Lý thuyết: {(grades||[]).length} môn</span>
+            <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 text-xs font-bold rounded-full">Kỹ năng: {(skills||[]).length} bài</span>
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 text-xs font-bold rounded-full">OSCE: {(grades||[]).filter(g=>g.subject.includes('OSCE')).length} ca</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 4 PILLARS */}
+      <h3 className="text-lg font-black mt-8 mb-4">Đánh giá 4 Trụ cột Năng lực</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { title: "Năng lực Lý thuyết", score: compTheory, icon: Book, color: "bg-indigo-500", desc: "Dựa trên điểm GPA" },
+          { title: "Năng lực Thực hành", score: compPractice, icon: Activity, color: "bg-green-500", desc: "Tỷ lệ thực hành độc lập" },
+          { title: "Năng lực Lâm sàng", score: compClinical, icon: Stethoscope, color: "bg-orange-500", desc: "Số lượng ca OSCE ảo" },
+          { title: "Thái độ & Học tập", score: compLearning, icon: Target, color: "bg-purple-500", desc: "Chuỗi kỷ luật thói quen" }
+        ].map((p, i) => {
+          const Icon = p.icon;
+          return (
+            <div key={i} className={`p-5 rounded-2xl border shadow-sm ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+              <div className="flex justify-between items-center mb-4">
+                <div className={`p-2 rounded-xl text-white ${p.color}`}><Icon size={18}/></div>
+                <span className="text-xl font-black">{p.score}%</span>
+              </div>
+              <p className="font-bold text-sm mb-1">{p.title}</p>
+              <div className="w-full bg-slate-100 dark:bg-gray-700 h-1.5 rounded-full mb-2"><div className={`h-full rounded-full ${p.color}`} style={{width: `${p.score}%`}}></div></div>
+              <p className="text-[10px] text-gray-500">{p.desc}</p>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* AUTO ANALYSIS & GOALS */}
+      <div className="grid lg:grid-cols-2 gap-6 mt-8">
+        <div className={`p-6 rounded-2xl border shadow-sm flex flex-col h-full ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+          <h3 className="font-bold mb-4 flex items-center gap-2 text-rose-600"><AlertTriangle size={18}/> Đề xuất cải thiện từ AI</h3>
+          <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+            <div>
+              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Môn học dưới chuẩn (&lt; 6.5)</p>
+              {weakSubjects.length ? weakSubjects.map(g => <div key={g.id} className="text-sm p-3 bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-300 rounded-xl mb-2 border border-rose-100 dark:border-rose-900 flex justify-between"><span className="font-bold">{g.subject}</span> <span>TB: {((Number(g.theory)+Number(g.practice)+Number(g.clinical))/3).toFixed(1)}</span></div>) : <p className="text-xs text-green-600">Tuyệt vời, không có môn nào dưới 6.5.</p>}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Kỹ năng cần tập huấn gấp</p>
+              {weakSkills.length ? weakSkills.map(s => <div key={s.id} className="text-sm p-3 bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-300 rounded-xl mb-2 border border-amber-100 dark:border-amber-900 flex justify-between"><span className="font-bold">{s.name}</span> <span className="text-[10px] uppercase">{s.proficiency || 'Chưa học'}</span></div>) : <p className="text-xs text-green-600">Đã nắm bản chất các kỹ năng được lưu.</p>}
+            </div>
+          </div>
+        </div>
+
+        <div className={`p-6 rounded-2xl border shadow-sm flex flex-col h-full ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+          <h3 className="font-bold mb-4 flex items-center gap-2 text-blue-600"><Target size={18}/> Kế hoạch phát triển chi tiết</h3>
+          <form onSubmit={addGoal} className="grid grid-cols-2 gap-2 mb-4">
+            <input type="text" placeholder="Tên mục tiêu (VD: Thi đỗ Nội khoa)..." value={goalForm.name} onChange={e=>setGoalForm({...goalForm, name: e.target.value})} className={`col-span-2 p-2.5 text-sm rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+            <input type="text" placeholder="Chỉ tiêu (VD: Điểm >= 8.0)" value={goalForm.target} onChange={e=>setGoalForm({...goalForm, target: e.target.value})} className={`p-2.5 text-sm rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+            <input type="date" value={goalForm.deadline} onChange={e=>setGoalForm({...goalForm, deadline: e.target.value})} className={`p-2.5 text-sm rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+            <button type="submit" className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl font-bold transition-colors">Tạo Kế Hoạch</button>
+          </form>
+          <div className="space-y-2 flex-1 overflow-y-auto pr-1">
+            {(weaks||[]).filter(w=>w.type==='goal').map(w => (
+               <div key={w.id} className={`p-3 border rounded-xl transition-all ${w.completed?'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900':'bg-slate-50 dark:bg-gray-900 dark:border-gray-800'}`}>
+                 <div className="flex items-start justify-between">
+                   <div className="flex items-start gap-3 cursor-pointer flex-1" onClick={()=>updateDoc(doc(db,'artifacts',appId,'users',user.uid,'weaks',w.id),{completed:!w.completed})}>
+                     <div className={`w-5 h-5 mt-0.5 border rounded flex items-center justify-center flex-shrink-0 ${w.completed?'bg-green-500 border-green-500 text-white':'border-gray-400'}`}>{w.completed && <Check size={12}/>}</div>
+                     <div>
+                       <span className={`text-sm font-bold ${w.completed?'line-through text-gray-400':''}`}>{w.name}</span>
+                       <div className="flex gap-2 mt-1">
+                         <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">Mục tiêu: {w.target}</span>
+                         <span className="text-[10px] font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded">Hạn: {w.deadline}</span>
+                       </div>
+                     </div>
+                   </div>
+                   <button onClick={()=>deleteDoc(doc(db,'artifacts',appId,'users',user.uid,'weaks',w.id))} className="text-red-500 p-2 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button>
+                 </div>
+               </div>
+            ))}
+            {!(weaks||[]).filter(w=>w.type==='goal').length && <p className="text-center text-xs text-gray-400 py-4">Chưa có kế hoạch phát triển nào.</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ============================================================================
+// MODULE 2: LÝ THUYẾT & AI (HỖ TRỢ TẢI XUỐNG VÀ NHẬP API KEY)
+// ============================================================================
+const TheoryModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  const { theoryDocs } = data;
+  const [text, setText] = useState('');
+  const [file, setFile] = useState(null);
+  const [aiOut, setAiOut] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState('summary');
+
+  const handleFile = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setFile(f.name);
+    // Hỗ trợ đọc TXT chuẩn xác, mô phỏng phản hồi cho PDF/DOCX
+    if(f.name.endsWith('.txt')){
+      const r = new FileReader(); 
+      r.onload = ev => setText(ev.target.result); 
+      r.readAsText(f);
+      showToast("Đã trích xuất nội dung văn bản thành công.");
+    } else {
+      setText(`[Đã tải lên tệp: ${f.name}]\n\nĐể hệ thống phân tích, vui lòng Copy & Paste văn bản trực tiếp từ tệp PDF/DOCX của bạn vào khung này.`);
+      showToast("Tệp đã được ghi nhận. Vui lòng xem hướng dẫn.", "success");
+    }
+  };
+
+  const process = async () => {
+    if(!text.trim() || text.includes("[Đã tải lên tệp")) return showToast("Vui lòng cung cấp văn bản gốc cần phân tích!", "error");
+    setLoading(true);
+    let p = mode === 'summary' ? "Tóm tắt chuyên sâu và lập dàn ý y khoa:" : mode === 'flashcard' ? "Tạo bộ 5 Flashcard ôn tập (Mặt trước hỏi, Mặt sau đáp):" : "Tạo 3 câu Trắc nghiệm và 2 câu Đúng/Sai (Kèm đáp án chi tiết):";
+    const res = await callGeminiAPI(p + "\n\n" + text);
+    setAiOut(res); setLoading(false); showToast("AI đã phân tích hoàn tất.");
+  };
+
+  const save = async () => {
+    if(!aiOut.trim()) return;
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'theory_docs'), { 
+      title: file || `Tài liệu lưu lúc ${new Date().toLocaleTimeString()}`, 
+      content: text, analysis: aiOut, type: mode, date: new Date().toLocaleDateString() 
+    });
+    setText(''); setAiOut(''); setFile(null); showToast("Đã lưu vào Thư viện số.");
+  };
+
+  const downloadTxt = () => {
+    if(!aiOut.trim()) return;
+    const element = document.createElement("a");
+    const fileBlob = new Blob([aiOut], {type: 'text/plain'});
+    element.href = URL.createObjectURL(fileBlob);
+    element.download = "tai-lieu-y-khoa.txt";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    showToast("Đã tải tài liệu xuống máy tính!");
+  };
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-6 animate-fadeIn">
+      <div className={`p-6 rounded-2xl shadow-sm border ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+         <h2 className="font-bold text-blue-600 mb-4 flex items-center gap-2"><Bot/> Phân Tích Y Văn</h2>
+         
+         <div className="flex flex-col md:flex-row gap-3 mb-4 items-start md:items-center">
+           <label className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-colors flex items-center gap-2">
+              <Upload size={16}/> Chọn File (.TXT/.PDF/.DOCX) <input type="file" className="hidden" accept=".txt,.pdf,.docx" onChange={handleFile}/>
+           </label>
+           <span className="text-xs text-gray-500 font-medium truncate">{file || 'Hoặc dán văn bản xuống dưới'}</span>
+         </div>
+         
+         <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Dán nội dung sách, nghiên cứu, bài giảng..." className={`w-full h-40 p-4 text-sm rounded-xl border outline-none mb-4 resize-none leading-relaxed ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}/>
+         
+         <div className="flex flex-wrap gap-2 mb-4">
+           {['summary', 'flashcard', 'quiz'].map(m => (
+             <button key={m} onClick={()=>setMode(m)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${mode===m?'bg-blue-600 text-white shadow-md':'bg-slate-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+               {m === 'summary' ? 'Tóm tắt & Dàn ý' : m === 'flashcard' ? 'Tạo Flashcard' : 'Sinh Đề Thi'}
+             </button>
+           ))}
+           <button onClick={process} disabled={loading} className="md:ml-auto bg-green-600 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 disabled:opacity-50">
+             {loading && <RotateCcw size={16} className="animate-spin"/>} Chạy AI
+           </button>
+         </div>
+
+         {aiOut && (
+           <div className="p-5 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl text-sm whitespace-pre-wrap relative animate-slideUp">
+             <div className="absolute top-3 right-3 flex gap-2">
+               <button onClick={downloadTxt} className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] px-3 py-1.5 font-bold rounded-lg transition-colors flex items-center gap-1"><Download size={12}/> Tải về</button>
+               <button onClick={save} className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] px-3 py-1.5 font-bold rounded-lg transition-colors flex items-center gap-1"><Save size={12}/> Lưu Thư viện</button>
+             </div>
+             <h4 className="font-bold text-yellow-800 dark:text-yellow-500 mb-2 border-b border-yellow-200 dark:border-yellow-800 pb-2">Kết quả xuất từ AI:</h4>
+             <div className="leading-relaxed mt-4">{aiOut}</div>
+           </div>
+         )}
+      </div>
+
+      <div className={`p-6 rounded-2xl shadow-sm border flex flex-col ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+         <h3 className="font-bold text-indigo-600 mb-4 flex items-center gap-2"><BookOpen/> Thư viện số cá nhân</h3>
+         <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+           {(theoryDocs||[]).map(d => (
+             <div key={d.id} className="p-4 border rounded-xl bg-slate-50 dark:bg-gray-900 dark:border-gray-800">
+               <div className="flex justify-between items-start mb-2">
+                 <p className="font-bold text-sm text-blue-600 leading-tight pr-4">{d.title}</p>
+                 <button onClick={()=>deleteDoc(doc(db,'artifacts',appId,'users',user.uid,'theory_docs',d.id))} className="text-red-500 p-1 hover:bg-red-50 dark:hover:bg-gray-800 rounded"><Trash2 size={16}/></button>
+               </div>
+               <div className="flex justify-between items-end mt-2">
+                 <span className="text-[9px] uppercase font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 px-2 py-0.5 rounded">{d.type}</span>
+                 <span className="text-[10px] font-bold text-gray-400">{d.date}</span>
+               </div>
+             </div>
+           ))}
+           {!(theoryDocs||[]).length && <p className="text-center text-sm text-gray-400 py-10">Thư viện trống.</p>}
+         </div>
+      </div>
+    </div>
+  )
+});
+
+// ============================================================================
+// MODULE 3: QUẢN LÝ ĐIỂM (HỆ 4 & 10)
+// ============================================================================
+const GradesModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  const { grades } = data;
+  const [fSub, setFSub] = useState(''); const [fT, setFT] = useState(''); const [fP, setFP] = useState(''); const [fC, setFC] = useState(''); const [fCr, setFCr] = useState(3);
+  
+  const saveGrade = async (e) => { 
+    e.preventDefault(); 
+    if(!fSub.trim()) return;
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'grades'), { 
+      subject: fSub, theory: Number(fT), practice: Number(fP), clinical: Number(fC), credits: Number(fCr) 
+    }); 
+    setFSub(''); setFT(''); setFP(''); setFC(''); showToast("Đã cập nhật bảng điểm."); 
+  };
+
+  // Convert Scale 10 to Scale 4.0 Standard Vietnam
+  const convertTo4 = (score10) => {
+    if (score10 >= 8.5) return 4.0;
+    if (score10 >= 8.0) return 3.5;
+    if (score10 >= 7.0) return 3.0;
+    if (score10 >= 6.5) return 2.5;
+    if (score10 >= 5.5) return 2.0;
+    if (score10 >= 5.0) return 1.5;
+    if (score10 >= 4.0) return 1.0;
+    return 0.0;
+  };
+
+  const evalLabel = (gpa4) => {
+    if (gpa4 >= 3.6) return { label: 'Xuất sắc', color: 'text-purple-600 bg-purple-100' };
+    if (gpa4 >= 3.2) return { label: 'Giỏi', color: 'text-blue-600 bg-blue-100' };
+    if (gpa4 >= 2.5) return { label: 'Khá', color: 'text-green-600 bg-green-100' };
+    if (gpa4 >= 2.0) return { label: 'Trung bình', color: 'text-amber-600 bg-amber-100' };
+    return { label: 'Kém', color: 'text-red-600 bg-red-100' };
+  };
+
+  const totalCr = (grades||[]).reduce((a,c)=>a+Number(c.credits), 0);
+  const { gpa10, gpa4 } = useMemo(() => {
+    if(!grades || !grades.length) return { gpa10: 0, gpa4: 0 };
+    let sum10 = 0, sum4 = 0;
+    grades.forEach(g => { 
+      const avg10 = (g.theory + g.practice + g.clinical) / 3;
+      sum10 += avg10 * g.credits;
+      sum4 += convertTo4(avg10) * g.credits;
+    });
+    return { 
+      gpa10: sum10 / totalCr, 
+      gpa4: sum4 / totalCr 
+    };
+  }, [grades, totalCr]);
+
+  const assessment = evalLabel(gpa4);
+
+  return (
+    <div className="grid lg:grid-cols-3 gap-6 animate-fadeIn">
+      <div className="lg:col-span-2 space-y-6">
+        <div className={`p-6 rounded-2xl shadow-sm border ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+           <h2 className="font-black text-blue-600 mb-6 flex items-center gap-2"><BarChart2/> Bảng Điểm Tích Lũy</h2>
+           <form onSubmit={saveGrade} className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-8">
+              <input type="text" placeholder="Tên môn học..." value={fSub} onChange={e=>setFSub(e.target.value)} className="col-span-2 md:col-span-2 p-3 text-xs border rounded-xl dark:bg-gray-900 dark:border-gray-700 outline-none" required/>
+              <input type="number" step="0.1" min="0" max="10" placeholder="Lý thuyết" value={fT} onChange={e=>setFT(e.target.value)} className="p-3 text-xs border rounded-xl dark:bg-gray-900 dark:border-gray-700 outline-none" required/>
+              <input type="number" step="0.1" min="0" max="10" placeholder="Thực hành" value={fP} onChange={e=>setFP(e.target.value)} className="p-3 text-xs border rounded-xl dark:bg-gray-900 dark:border-gray-700 outline-none" required/>
+              <input type="number" step="0.1" min="0" max="10" placeholder="Lâm sàng" value={fC} onChange={e=>setFC(e.target.value)} className="p-3 text-xs border rounded-xl dark:bg-gray-900 dark:border-gray-700 outline-none" required/>
+              <div className="flex gap-2 col-span-2 md:col-span-1">
+                <select value={fCr} onChange={e=>setFCr(e.target.value)} className="flex-1 p-3 text-xs border rounded-xl dark:bg-gray-900 dark:border-gray-700 outline-none">
+                   <option value="1">1 TC</option><option value="2">2 TC</option><option value="3">3 TC</option><option value="4">4 TC</option>
+                </select>
+              </div>
+              <button type="submit" className="col-span-2 md:col-span-6 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold p-3 rounded-xl text-sm">Lưu Kết Quả</button>
+           </form>
+
+           <div className="overflow-x-auto">
+             <table className="w-full text-xs text-left whitespace-nowrap">
+                <thead className="border-b-2 dark:border-gray-700 text-gray-500">
+                  <tr><th className="p-2">Học phần</th><th className="p-2">Tín chỉ</th><th className="p-2">Hệ 10</th><th className="p-2">Hệ 4.0</th><th className="p-2"></th></tr>
+                </thead>
+                <tbody>
+                  {(grades||[]).map(g => {
+                    const avg10 = ((g.theory+g.practice+g.clinical)/3);
+                    const avg4 = convertTo4(avg10);
+                    return (
+                    <tr key={g.id} className="border-b dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-900">
+                      <td className="p-2 font-bold truncate max-w-[150px]">{g.subject}</td>
+                      <td className="p-2 font-medium">{g.credits} TC</td>
+                      <td className="p-2 font-black text-blue-600">{avg10.toFixed(1)}</td>
+                      <td className="p-2 font-black text-indigo-600">{avg4.toFixed(1)}</td>
+                      <td className="p-2 text-right"><button onClick={()=>deleteDoc(doc(db,'artifacts',appId,'users',user.uid,'grades',g.id))} className="text-red-500 hover:bg-red-50 p-1.5 rounded"><Trash2 size={14}/></button></td>
+                    </tr>
+                  )})}
+                </tbody>
+             </table>
+             {!(grades||[]).length && <p className="text-center text-gray-400 py-6 text-sm">Chưa có dữ liệu điểm.</p>}
+           </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <div className={`p-6 rounded-2xl shadow-sm border text-center ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+          <h3 className="font-bold mb-6 text-lg">Xếp Loại Học Tập</h3>
+          <div className="flex justify-center mb-6">
+             <span className={`px-6 py-2 rounded-full font-black text-lg ${assessment.color} dark:bg-opacity-20`}>{assessment.label}</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-2xl">
+               <p className="text-[10px] font-bold text-gray-500 uppercase">Thang 10.0</p>
+               <h1 className="text-4xl font-black text-blue-600 mt-1">{gpa10.toFixed(2)}</h1>
+            </div>
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl">
+               <p className="text-[10px] font-bold text-gray-500 uppercase">Thang 4.0</p>
+               <h1 className="text-4xl font-black text-indigo-600 mt-1">{gpa4.toFixed(2)}</h1>
+            </div>
+          </div>
+          
+          <div className="mt-6 pt-6 border-t dark:border-gray-700 flex justify-between items-center px-4">
+            <span className="text-sm font-bold text-gray-500">Tổng tín chỉ tích lũy</span>
+            <span className="text-xl font-black">{totalCr} TC</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+});
+
+// ============================================================================
+// MODULE 4: AI ASSISTANT (TÍCH HỢP UI CHO API KEY & LỊCH SỬ)
+// ============================================================================
+const AIAssistantModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  const { aiChats } = data;
+  const [activeChat, setActiveChat] = useState(null);
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef(null);
+
+  // User API Key State
+  const [userApiKey, setUserApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
+  const [showKeyConfig, setShowKeyConfig] = useState(false);
+
+  const saveApiKey = () => {
+    localStorage.setItem('gemini_api_key', userApiKey);
+    setShowKeyConfig(false);
+    showToast("Đã lưu API Key! Giáo sư AI đã kết nối mạng lưới.");
+  };
+
+  useEffect(() => {
+    if (activeChat) {
+      const liveChat = aiChats.find(c => c.id === activeChat.id);
+      if (liveChat) setMsgs(liveChat.messages || []);
+    } else if (aiChats.length > 0) {
+      setActiveChat(aiChats[0]);
+      setMsgs(aiChats[0].messages || []);
+    }
+  }, [aiChats, activeChat]);
+
+  const createChat = async () => {
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'ai_chats'), {
+      title: `Trò chuyện ${new Date().toLocaleDateString()}`, messages: [{ text: "Giáo sư AI sẵn sàng hỗ trợ bạn.", isBot: true }], timestamp: Date.now()
+    });
+    showToast("Đã tạo phòng trò chuyện mới.");
+  };
+
+  const sendMsg = async () => {
+    if(!input.trim() || loading || !activeChat) return;
+    const newMsgs = [...msgs, { text: input, isBot: false }];
+    setMsgs(newMsgs); setInput(''); setLoading(true);
+    
+    const reply = await callGeminiAPI(input);
+    const finalMsgs = [...newMsgs, { text: reply, isBot: true }];
+    setMsgs(finalMsgs); setLoading(false);
+
+    let title = activeChat.title;
+    if (newMsgs.length === 2) title = input.substring(0, 25) + '...';
+
+    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'ai_chats', activeChat.id), { messages: finalMsgs, title });
+  };
+
+  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
+
+  return (
+    <div className="grid lg:grid-cols-4 gap-6 animate-fadeIn h-[calc(100vh-140px)]">
+      
+      {/* KHUNG CẤU HÌNH API KEY (MODAL) */}
+      {showKeyConfig && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className={`w-full max-w-md p-6 rounded-3xl ${isDarkMode?'bg-gray-800':'bg-white'} relative`}>
+             <button onClick={()=>setShowKeyConfig(false)} className="absolute top-4 right-4 text-gray-400"><X/></button>
+             <h3 className="text-lg font-black text-blue-600 mb-2 flex items-center gap-2"><Key/> Cấu hình Trí tuệ Nhân tạo</h3>
+             <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+               Để AI phân tích tài liệu và trả lời sâu sắc, bạn cần cung cấp Gemini API Key. Bạn có thể lấy miễn phí tại Google AI Studio. Nếu không nhập, AI sẽ chỉ hoạt động ở chế độ Mô phỏng Offline.
+             </p>
+             <input type="password" placeholder="Dán Gemini API Key vào đây..." value={userApiKey} onChange={e=>setUserApiKey(e.target.value)} className={`w-full p-3 text-sm rounded-xl border outline-none mb-4 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}/>
+             <button onClick={saveApiKey} className="w-full bg-blue-600 text-white font-bold p-3 rounded-xl">Lưu & Kết nối AI</button>
+          </div>
+        </div>
+      )}
+
+      {/* SIDEBAR CHATS */}
+      <div className={`p-4 rounded-2xl border shadow-sm flex flex-col h-full ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-sm">Lịch sử hội thoại</h3>
+          <button onClick={createChat} className="bg-blue-600 text-white p-1.5 rounded-lg"><Plus size={14}/></button>
+        </div>
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+          {aiChats.sort((a,b)=>b.timestamp-a.timestamp).map(c => (
+            <div key={c.id} onClick={()=>setActiveChat(c)} className={`p-3 border rounded-xl cursor-pointer flex justify-between items-center transition-colors ${activeChat?.id===c.id?'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800':'bg-slate-50 dark:bg-gray-900 dark:border-gray-800'}`}>
+               <div className="overflow-hidden">
+                 <p className="text-xs font-bold truncate">{c.title}</p>
+               </div>
+               <button onClick={(e)=>{e.stopPropagation(); deleteDoc(doc(db,'artifacts',appId,'users',user.uid,'ai_chats',c.id)); setActiveChat(null);}} className="text-red-500 p-1"><Trash2 size={12}/></button>
+            </div>
+          ))}
+          {!aiChats.length && <p className="text-xs text-center text-gray-400 py-4">Chưa có lịch sử.</p>}
+        </div>
+      </div>
+
+      <div className={`lg:col-span-3 p-6 rounded-2xl border shadow-sm flex flex-col h-full ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+        {activeChat ? (
+          <>
+            <div className="border-b pb-3 mb-4 flex justify-between items-center dark:border-gray-700">
+               <div className="flex items-center gap-2"><Bot className="text-blue-500"/><h3 className="font-bold text-sm">Giáo sư AI</h3></div>
+               <button onClick={()=>setShowKeyConfig(true)} className="text-[10px] font-bold bg-slate-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg flex items-center gap-1"><Key size={12}/> Cấu hình AI</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-4">
+              {msgs.map((m, i) => (
+                <div key={i} className={`flex ${m.isBot ? 'justify-start' : 'justify-end'}`}>
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${m.isBot ? (isDarkMode?'bg-gray-900 border border-gray-700':'bg-slate-50 border border-gray-100 text-gray-800') : 'bg-blue-600 text-white'}`}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              {loading && <div className="text-sm text-gray-500 animate-pulse bg-slate-50 dark:bg-gray-900 w-fit p-3 rounded-2xl">Đang truy xuất dữ liệu y văn...</div>}
+              <div ref={scrollRef}/>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t dark:border-gray-700 relative">
+               {!userApiKey && (
+                 <div className="absolute -top-8 left-0 text-[10px] text-red-500 font-bold bg-red-100 px-2 py-1 rounded shadow-sm cursor-pointer" onClick={()=>setShowKeyConfig(true)}>⚠️ Đang chạy chế độ Offline. Bấm để nhập API Key.</div>
+               )}
+               <input type="text" value={input} onChange={e=>setInput(e.target.value)} onKeyPress={e=>e.key==='Enter'&&sendMsg()} placeholder="Hỏi kiến thức y khoa..." className={`flex-1 p-3 text-sm rounded-xl border outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode?'bg-gray-900 border-gray-700 text-white':'bg-slate-50'}`}/>
+               <button onClick={sendMsg} disabled={loading} className="bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 rounded-xl text-sm disabled:opacity-50">Gửi</button>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex justify-center items-center text-gray-400 font-bold text-sm">Chọn một hội thoại bên trái để bắt đầu.</div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+// ============================================================================
+// CÁC MODULE DÙNG CHUNG CÒN LẠI (DASHBOARD, CASES, HABITS, PRACTICE...)
+// ============================================================================
+
+const PracticeModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  const { skills } = data;
+  const [activeSkill, setActiveSkill] = useState(null);
+  const [filterSpec, setFilterSpec] = useState('Tất cả');
+
+  const [fName, setFName] = useState('');
+  const [fSpec, setFSpec] = useState('Nội khoa');
+  const [logForm, setLogForm] = useState({ date: getTodayStr(), loc: '', supervisor: '', count: 1, reflection: '', confidence: 3 });
+
+  const proficiencies = ["Chưa học", "Đang học", "Đã thực hành có hướng dẫn", "Có thể thực hiện độc lập", "Thành thạo"];
+  const specialties = ['Nội khoa', 'Ngoại khoa', 'Sản khoa', 'Nhi khoa', 'Cấp cứu', 'Điều dưỡng cơ bản'];
+
+  const addSkill = async (e) => {
+    e.preventDefault();
+    if (!fName.trim()) return;
+    const newSkill = {
+      name: fName, specialty: fSpec, proficiency: 'Chưa học',
+      objectives: '', equipment: '', indications: '', errors: '',
+      steps: [{text: "Chuẩn bị dụng cụ", checked: false}], videos: [], logs: []
+    };
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'skills_v2'), newSkill);
+    setFName(''); showToast("Đã tạo kỹ năng mới trong thư viện.");
+  };
+
+  const updateSkill = async (field, value) => {
+    if (!activeSkill) return;
+    const payload = { [field]: value };
+    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'skills_v2', activeSkill.id), payload);
+    setActiveSkill({ ...activeSkill, ...payload });
+  };
+
+  const addVideo = () => {
+    const link = prompt("Nhập đường dẫn YouTube:");
+    if (link) updateSkill('videos', [...(activeSkill.videos || []), link]);
+  };
+
+  const saveLog = async (e) => {
+    e.preventDefault();
+    const newLogs = [...(activeSkill.logs || []), { ...logForm }];
+    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'skills_v2', activeSkill.id), { logs: newLogs });
+    setActiveSkill({...activeSkill, logs: newLogs});
+    setLogForm({ ...logForm, supervisor: '', reflection: '' });
+    showToast("Đã lưu nhật ký thực hành.");
+  };
+
+  const filteredSkills = skills.filter(s => filterSpec === 'Tất cả' || s.specialty === filterSpec);
+  const learnedCount = skills.filter(s => s.proficiency === 'Thành thạo' || s.proficiency === 'Có thể thực hiện độc lập').length;
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-6 animate-fadeIn">
+      {/* LEFT SIDEBAR: LIST & STATS */}
+      <div className={`w-full lg:w-1/3 flex flex-col gap-4`}>
+        <div className={`p-4 rounded-2xl border shadow-sm flex justify-between items-center ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+           <div><p className="text-[10px] uppercase font-bold text-gray-500">Đã nắm vững</p><p className="text-2xl font-black text-green-500">{learnedCount}/{skills.length}</p></div>
+           <div><p className="text-[10px] uppercase font-bold text-gray-500">Đang luyện tập</p><p className="text-2xl font-black text-blue-500">{skills.length - learnedCount}</p></div>
+        </div>
+
+        <div className={`flex-1 p-4 rounded-2xl border shadow-sm flex flex-col ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+          <h3 className="font-bold text-blue-600 mb-4 flex items-center gap-2"><List size={18}/> Thư viện Kỹ năng</h3>
+          <form onSubmit={addSkill} className="space-y-2 mb-4 border-b pb-4 dark:border-gray-700">
+            <input type="text" placeholder="Tên kỹ năng..." value={fName} onChange={e=>setFName(e.target.value)} className={`w-full p-2 text-sm rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+            <div className="flex gap-2">
+              <select value={fSpec} onChange={e=>setFSpec(e.target.value)} className={`flex-1 p-2 text-xs rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}>
+                {specialties.map(s => <option key={s}>{s}</option>)}
+              </select>
+              <button type="submit" className="bg-blue-600 text-white px-3 rounded-xl font-bold text-xs">Thêm</button>
+            </div>
+          </form>
+
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 hide-scrollbar">
+            {['Tất cả', ...specialties].map(s => <button key={s} onClick={()=>setFilterSpec(s)} className={`px-3 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${filterSpec===s?'bg-indigo-600 text-white':'bg-slate-100 dark:bg-gray-700 text-gray-500'}`}>{s}</button>)}
+          </div>
+
+          <div className="space-y-2 overflow-y-auto max-h-[500px] pr-1">
+            {filteredSkills.map(s => (
+              <div key={s.id} onClick={()=>setActiveSkill(s)} className={`p-3 rounded-xl border cursor-pointer flex justify-between items-start transition-colors ${activeSkill?.id === s.id ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30' : 'bg-slate-50 dark:bg-gray-900 dark:border-gray-800'}`}>
+                <div>
+                  <span className="text-[8px] bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-bold uppercase">{s.specialty}</span>
+                  <p className="text-sm font-bold mt-1">{s.name}</p>
+                  <p className={`text-[10px] font-bold mt-1 ${(s.proficiency || '').includes('Thành thạo')?'text-green-500':(s.proficiency || '').includes('độc lập')?'text-blue-500':'text-orange-500'}`}>{s.proficiency || 'Chưa học'}</p>
+                </div>
+                <button onClick={(e)=>{e.stopPropagation(); deleteDoc(doc(db,'artifacts',appId,'users',user.uid,'skills_v2',s.id)); setActiveSkill(null)}} className="text-red-500 p-1"><Trash2 size={14}/></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT WORKSPACE: DETAIL & EDIT */}
+      <div className="w-full lg:w-2/3 space-y-6">
+        {activeSkill ? (
+          <>
+            <div className={`p-6 rounded-2xl border shadow-sm ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+              <div className="flex justify-between items-center border-b pb-4 mb-4 dark:border-gray-700">
+                <div>
+                  <h2 className="text-2xl font-black text-blue-600">{activeSkill.name}</h2>
+                  <span className="text-xs font-bold text-gray-500">{activeSkill?.specialty}</span>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Mức độ thành thạo</label>
+                  <select value={activeSkill.proficiency || 'Chưa học'} onChange={e=>updateSkill('proficiency', e.target.value)} className={`p-2 text-xs font-bold rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700 text-blue-400':'bg-blue-50 border-blue-200 text-blue-700'}`}>
+                    {proficiencies.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div><label className="text-xs font-bold text-gray-500">Mô tả / Mục tiêu học tập</label><textarea value={activeSkill.objectives} onChange={e=>updateSkill('objectives', e.target.value)} className={`w-full p-2 text-xs rounded border outline-none h-16 mt-1 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}/></div>
+                <div><label className="text-xs font-bold text-gray-500">Dụng cụ cần chuẩn bị</label><textarea value={activeSkill.equipment} onChange={e=>updateSkill('equipment', e.target.value)} className={`w-full p-2 text-xs rounded border outline-none h-16 mt-1 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}/></div>
+                <div><label className="text-xs font-bold text-gray-500">Chỉ định / Chống chỉ định</label><textarea value={activeSkill.indications} onChange={e=>updateSkill('indications', e.target.value)} className={`w-full p-2 text-xs rounded border outline-none h-16 mt-1 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}/></div>
+                <div><label className="text-xs font-bold text-gray-500">Lỗi thường gặp & Lưu ý</label><textarea value={activeSkill.errors} onChange={e=>updateSkill('errors', e.target.value)} className={`w-full p-2 text-xs rounded border outline-none h-16 mt-1 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}/></div>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex justify-between mb-2">
+                  <h4 className="text-sm font-bold flex items-center gap-2"><CheckSquare size={16}/> Bảng kiểm (Checklist)</h4>
+                  <button onClick={()=>{const t=prompt("Tên bước:"); if(t) updateSkill('steps', [...activeSkill.steps, {text:t, checked:false}])}} className="text-xs text-blue-600 font-bold hover:underline">+ Thêm bước</button>
+                </div>
+                <div className="space-y-2">
+                  {activeSkill.steps?.map((step, i) => (
+                    <div key={i} className="p-2.5 border rounded-lg bg-slate-50 dark:bg-gray-900 flex justify-between items-center dark:border-gray-800 cursor-pointer" onClick={()=>{const st=[...activeSkill.steps]; st[i].checked=!st[i].checked; updateSkill('steps', st);}}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 border flex justify-center items-center rounded ${step.checked?'bg-green-500 border-green-500 text-white':'border-gray-400'}`}>{step.checked && <Check size={10}/>}</div>
+                        <span className={`text-sm font-medium ${step.checked?'line-through text-gray-400':''}`}>{step.text}</span>
+                      </div>
+                      <button onClick={(e)=>{e.stopPropagation(); updateSkill('steps', activeSkill.steps.filter((_,idx)=>idx!==i))}} className="text-red-500 p-1"><Trash2 size={12}/></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-3">
+                  <h4 className="text-sm font-bold flex items-center gap-2"><Video size={16}/> Video hướng dẫn lâm sàng</h4>
+                  <button onClick={addVideo} className="text-xs text-blue-600 font-bold hover:underline">+ Gắn link YouTube</button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {(activeSkill.videos||[]).map((v, i) => {
+                    const yId = extractYouTubeID(v);
+                    return yId ? (
+                      <div key={i} className="relative aspect-video bg-black rounded-xl overflow-hidden group">
+                        <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${yId}`} allowFullScreen/>
+                        <button onClick={()=>updateSkill('videos', activeSkill.videos.filter((_,idx)=>idx!==i))} className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12}/></button>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Logbook */}
+            <div className={`p-6 rounded-2xl border shadow-sm ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Book size={18}/> Nhật ký thực hành</h3>
+              <form onSubmit={saveLog} className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <input type="date" value={logForm.date} onChange={e=>setLogForm({...logForm, date:e.target.value})} className={`col-span-2 md:col-span-1 p-2 text-xs rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+                <input type="text" placeholder="Nơi thực hành..." value={logForm.loc} onChange={e=>setLogForm({...logForm, loc:e.target.value})} className={`col-span-2 md:col-span-1 p-2 text-xs rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+                <input type="text" placeholder="Người HD..." value={logForm.supervisor} onChange={e=>setLogForm({...logForm, supervisor:e.target.value})} className={`col-span-2 md:col-span-1 p-2 text-xs rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}/>
+                <select value={logForm.confidence} onChange={e=>setLogForm({...logForm, confidence:e.target.value})} className={`col-span-2 md:col-span-1 p-2 text-xs rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}>
+                  {[1,2,3,4,5].map(v=><option key={v} value={v}>Tự tin: {v}/5</option>)}
+                </select>
+                <input type="text" placeholder="Nhận xét / Lỗi..." value={logForm.reflection} onChange={e=>setLogForm({...logForm, reflection:e.target.value})} className={`col-span-2 md:col-span-4 p-2 text-xs rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}/>
+                <button type="submit" className="col-span-2 md:col-span-4 bg-indigo-600 text-white font-bold p-2.5 rounded-xl text-sm">Ghi Sổ Logbook</button>
+              </form>
+              <div className="space-y-3">
+                {(activeSkill.logs||[]).map((l, i) => (
+                  <div key={i} className="p-4 border rounded-xl bg-slate-50 dark:bg-gray-900 dark:border-gray-800 flex justify-between">
+                    <div>
+                      <p className="font-bold text-sm">{l.date} • {l.loc}</p>
+                      {l.supervisor && <p className="text-xs text-blue-600 mt-1">HD: {l.supervisor}</p>}
+                      {l.reflection && <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 italic">"{l.reflection}"</p>}
+                    </div>
+                    <div className="text-right"><span className="bg-yellow-100 text-yellow-800 text-[10px] font-black px-2 py-0.5 rounded">Tự tin {l.confidence}/5</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center text-gray-400 border border-dashed rounded-2xl"><Activity size={48} className="mb-3 opacity-50 animate-pulse"/><p className="font-bold">Chọn kỹ năng lâm sàng.</p></div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+const DashboardModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  const { tasks, banners, grades, skills } = data;
+  
+  const [taskForm, setTaskForm] = useState({ id: null, text: '', priority: 'Medium' });
+  const [newBanner, setNewBanner] = useState('');
+
+  const taskStats = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.completed).length;
+    return { total, completed, progress: total ? Math.round((completed/total)*100) : 0 };
+  }, [tasks]);
+
+  const gpa = useMemo(() => {
+    let tCr = 0, sum = 0;
+    grades.forEach(g => { tCr += Number(g.credits); sum += ((Number(g.theory)+Number(g.practice)+Number(g.clinical))/3)*Number(g.credits); });
+    return tCr ? (sum/tCr).toFixed(2) : '0.00';
+  }, [grades]);
+
+  const saveTask = async (e) => {
+    e.preventDefault();
+    if (!taskForm.text.trim()) return showToast("Nhập tên nhiệm vụ", "error");
+    const payload = { text: taskForm.text, priority: taskForm.priority, completed: false, date: getTodayStr() };
+    if (taskForm.id) { await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', taskForm.id), payload); showToast("Đã sửa"); } 
+    else { await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'tasks'), payload); showToast("Đã thêm"); }
+    setTaskForm({ id: null, text: '', priority: 'Medium' });
+  };
+
+  const saveBanner = async (e) => {
+    e.preventDefault();
+    if (!newBanner.trim()) return;
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'banners'), { text: newBanner });
+    setNewBanner(''); showToast("Đã thêm động lực");
+  };
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      <div className={`p-6 rounded-3xl shadow-sm bg-gradient-to-r ${isDarkMode ? 'from-blue-950 to-slate-900' : 'from-blue-600 to-indigo-600'} text-white`}>
+        <h3 className="font-bold uppercase tracking-widest text-blue-200 text-xs mb-3">Động lực Y khoa</h3>
+        <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
+          {banners.map(b => (
+            <div key={b.id} className="flex justify-between items-center bg-white/10 p-3 rounded-xl">
+              <p className="italic font-medium text-sm md:text-base">"{b.text}"</p>
+              <button onClick={() => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'banners', b.id))} className="text-red-300 p-1 hover:text-red-100"><Trash2 size={16}/></button>
+            </div>
+          ))}
+        </div>
+        <form onSubmit={saveBanner} className="flex gap-2">
+          <input type="text" value={newBanner} onChange={e=>setNewBanner(e.target.value)} placeholder="Thêm châm ngôn..." className="flex-1 p-2 rounded-xl bg-white/10 border border-white/20 text-sm outline-none placeholder-white/50" />
+          <button type="submit" className="bg-white text-blue-600 font-bold px-4 rounded-xl text-sm"><Plus size={16}/></button>
+        </form>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'GPA Hiện tại', val: gpa, icon: BarChart2, color: 'text-indigo-500' },
+          { label: 'Nhiệm vụ', val: `${taskStats.completed}/${taskStats.total}`, icon: CheckSquare, color: 'text-green-500' },
+          { label: 'Kỹ năng độc lập', val: skills.filter(s=>s.proficiency==='Có thể thực hiện độc lập' || s.proficiency==='Thành thạo').length, icon: Activity, color: 'text-rose-500' },
+          { label: 'Môn học', val: grades.length, icon: Book, color: 'text-blue-500' }
+        ].map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <div key={i} className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+              <div className={`p-3 rounded-xl bg-slate-50 dark:bg-gray-900 border dark:border-gray-800 ${s.color}`}><Icon size={20}/></div>
+              <div><p className="text-[10px] text-gray-500 font-bold uppercase">{s.label}</p><h3 className="text-xl font-black">{s.val}</h3></div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className={`p-6 rounded-2xl border shadow-sm ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+        <div className="flex justify-between items-center mb-6"><h3 className="text-lg font-bold flex items-center gap-2"><CheckSquare className="text-blue-500"/> Danh sách việc cần làm</h3><span className="text-xs bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold px-3 py-1 rounded-full">Tiến độ: {taskStats.progress}%</span></div>
+        <form onSubmit={saveTask} className="flex flex-col md:flex-row gap-2 mb-6">
+          <input type="text" placeholder="Tên nhiệm vụ..." value={taskForm.text} onChange={e=>setTaskForm({...taskForm, text: e.target.value})} className={`flex-1 p-2.5 text-sm rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+          <select value={taskForm.priority} onChange={e=>setTaskForm({...taskForm, priority: e.target.value})} className={`p-2.5 text-sm rounded-xl border outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}><option value="High">Ưu tiên Cao</option><option value="Medium">Trung bình</option><option value="Low">Thấp</option></select>
+          <button type="submit" className="bg-blue-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm">{taskForm.id ? 'Cập nhật' : 'Thêm'}</button>
+        </form>
+        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+          {tasks.map(t => (
+            <div key={t.id} className={`p-3 rounded-xl border flex justify-between items-center ${t.completed ? 'bg-green-50/50 border-green-200 dark:bg-green-900/10' : (isDarkMode?'bg-gray-900 border-gray-800':'bg-white')}`}>
+              <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={()=>updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', t.id), {completed: !t.completed})}>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${t.completed ? 'border-green-500 bg-green-500 text-white' : 'border-gray-400'}`}>{t.completed && <Check size={12}/>}</div>
+                <div><p className={`text-sm font-bold ${t.completed ? 'line-through text-gray-400' : ''}`}>{t.text}</p></div>
+              </div>
+              <div className="flex gap-1 ml-2"><button onClick={(e)=>{e.stopPropagation(); setTaskForm(t);}} className="text-blue-500 p-1.5 rounded"><Edit2 size={14}/></button><button onClick={(e)=>{e.stopPropagation(); deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', t.id));}} className="text-red-500 p-1.5 rounded"><Trash2 size={14}/></button></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const CasesModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  const { cases } = data;
+  const [activeCase, setActiveCase] = useState(null);
+  const [step, setStep] = useState('list');
+  const [loading, setLoading] = useState(false);
+  const [cForm, setCForm] = useState({ spec: 'Nội khoa', age: 40, gender: 'Nam', reason: '', history: '', exam: '', lab: '', correctDiag: '', correctTreat: '' });
+  const [uForm, setUForm] = useState({ history: '', exam: '', lab: '', diag: '', treat: '' });
+  const [report, setReport] = useState(null);
+
+  const handleCreateCase = async (e) => {
+    e.preventDefault();
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'cases_simulation'), cForm);
+    setCForm({ spec: 'Nội khoa', age: 40, gender: 'Nam', reason: '', history: '', exam: '', lab: '', correctDiag: '', correctTreat: '' });
+    setStep('list'); showToast("Đã lưu ca bệnh vào thư viện.");
+  };
+
+  const submitOSCE = async () => {
+    if (!uForm.diag.trim()) return showToast("Phải nhập chẩn đoán xác định", "error");
+    setLoading(true);
+    const prompt = `Bạn là Giám khảo chấm thi OSCE. Chấm điểm bài làm:
+      - ĐÁP ÁN: Chẩn đoán [${activeCase.correctDiag}]. Xử trí [${activeCase.correctTreat}].
+      - BÀI LÀM: Hỏi ${uForm.history}. Khám ${uForm.exam}. CLS ${uForm.lab}. Chẩn đoán ${uForm.diag}. Xử trí ${uForm.treat}.
+      Yêu cầu: Chấm hệ 10. Trả về định dạng: ĐIỂM: [Số điểm]/10 \n NHẬN XÉT: [Nhận xét chi tiết]`;
+    const res = await callGeminiAPI(prompt);
+    let score = 8.0; const match = res.match(/ĐIỂM:\s*(\d+(\.\d+)?)/i); if (match) score = parseFloat(match[1]);
+    setReport({ score, text: res }); setStep('report'); setLoading(false);
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'grades'), { subject: `OSCE: ${activeCase.correctDiag.substring(0, 15)}...`, theory: score, practice: score, clinical: score, credits: 1 });
+    showToast("Đã chấm điểm & đồng bộ Bảng điểm!");
+  };
+
+  return (
+    <div className={`p-6 rounded-2xl border shadow-sm animate-fadeIn ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+      <div className="flex justify-between items-center mb-6 border-b pb-4 dark:border-gray-700"><h2 className="text-xl font-black text-blue-600 flex items-center gap-2"><CheckSquare/> Trạm mô phỏng OSCE</h2><div className="flex gap-2">{step !== 'list' && <button onClick={()=>setStep('list')} className="px-4 py-2 text-sm font-bold bg-slate-100 dark:bg-gray-700 rounded-xl">Quay lại Kho</button>}{step === 'list' && <button onClick={()=>setStep('create')} className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-xl">Tạo Case Mới</button>}</div></div>
+      {step === 'list' && (
+        <div className="grid md:grid-cols-3 gap-4">
+          {cases.map(c => (
+            <div key={c.id} className="p-4 border rounded-xl bg-slate-50 dark:bg-gray-900 dark:border-gray-700 flex flex-col justify-between">
+              <div><span className="text-[10px] font-bold uppercase bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{c.spec}</span><p className="font-bold mt-2">BN {c.gender} {c.age}T</p><p className="text-xs text-gray-500 mt-1 line-clamp-2">Lý do: {c.reason}</p></div>
+              <div className="flex justify-between items-center mt-4"><button onClick={()=>{setActiveCase(c); setStep('solve'); setUForm({history:'', exam:'', lab:'', diag:'', treat:''})}} className="text-xs font-bold text-white bg-green-600 px-3 py-1.5 rounded-lg">Vào Trạm Thi</button><button onClick={()=>deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'cases_simulation', c.id))} className="text-red-500"><Trash2 size={16}/></button></div>
+            </div>
+          ))}
+        </div>
+      )}
+      {step === 'create' && (
+        <form onSubmit={handleCreateCase} className="space-y-4 max-w-2xl mx-auto">
+          <div className="grid grid-cols-3 gap-2"><select value={cForm.spec} onChange={e=>setCForm({...cForm, spec:e.target.value})} className={`p-2.5 text-sm border rounded-xl outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}><option>Nội khoa</option><option>Ngoại khoa</option><option>Sản</option><option>Nhi</option></select><input type="number" placeholder="Tuổi" value={cForm.age} onChange={e=>setCForm({...cForm, age:e.target.value})} className={`p-2.5 text-sm border rounded-xl outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`} required/><select value={cForm.gender} onChange={e=>setCForm({...cForm, gender:e.target.value})} className={`p-2.5 text-sm border rounded-xl outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}><option>Nam</option><option>Nữ</option></select></div>
+          <input type="text" placeholder="Lý do nhập viện" value={cForm.reason} onChange={e=>setCForm({...cForm, reason:e.target.value})} className={`w-full p-2.5 text-sm border rounded-xl outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`} required/>
+          <textarea placeholder="Bệnh sử / Tiền sử" value={cForm.history} onChange={e=>setCForm({...cForm, history:e.target.value})} className={`w-full p-2.5 text-sm border rounded-xl outline-none h-20 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}/>
+          <textarea placeholder="Khám thực thể..." value={cForm.exam} onChange={e=>setCForm({...cForm, exam:e.target.value})} className={`w-full p-2.5 text-sm border rounded-xl outline-none h-20 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}/>
+          <div className="p-4 border border-green-200 bg-green-50 dark:bg-green-900/10 rounded-xl space-y-3">
+            <h4 className="font-bold text-sm text-green-700 dark:text-green-400">Đáp án chuẩn</h4>
+            <input type="text" placeholder="Chẩn đoán xác định..." value={cForm.correctDiag} onChange={e=>setCForm({...cForm, correctDiag:e.target.value})} className={`w-full p-2.5 text-sm border rounded-xl outline-none ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`} required/>
+            <textarea placeholder="Hướng xử trí đúng..." value={cForm.correctTreat} onChange={e=>setCForm({...cForm, correctTreat:e.target.value})} className={`w-full p-2.5 text-sm border rounded-xl outline-none h-20 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}/>
+          </div>
+          <button type="submit" className="w-full bg-blue-600 text-white font-bold p-3 rounded-xl">Lưu Đề Thi</button>
+        </form>
+      )}
+      {step === 'solve' && activeCase && (
+        <div className="grid lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-2 bg-slate-50 dark:bg-gray-900 p-6 rounded-xl border dark:border-gray-700 h-fit"><h3 className="font-black text-lg text-blue-600 mb-2">Đề Bài Lâm Sàng</h3><p className="font-bold">BN {activeCase.gender} {activeCase.age}T</p><p className="text-sm text-red-500 font-bold mt-2">🏥 Lý do: {activeCase.reason}</p><p className="text-sm mt-3 leading-relaxed whitespace-pre-wrap"><span className="font-bold text-gray-500">Bệnh sử:</span> {activeCase.history}</p><p className="text-sm mt-3 leading-relaxed whitespace-pre-wrap"><span className="font-bold text-gray-500">Khám:</span> {activeCase.exam}</p></div>
+          <div className="lg:col-span-3 space-y-3">
+            <textarea placeholder="1. Hỏi bệnh..." value={uForm.history} onChange={e=>setUForm({...uForm, history:e.target.value})} className={`w-full p-3 text-sm border rounded-xl outline-none h-20 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}/>
+            <textarea placeholder="2. Khám thực thể..." value={uForm.exam} onChange={e=>setUForm({...uForm, exam:e.target.value})} className={`w-full p-3 text-sm border rounded-xl outline-none h-20 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}/>
+            <textarea placeholder="3. Cận lâm sàng..." value={uForm.lab} onChange={e=>setUForm({...uForm, lab:e.target.value})} className={`w-full p-3 text-sm border rounded-xl outline-none h-20 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}/>
+            <input type="text" placeholder="4. CHẨN ĐOÁN XÁC ĐỊNH *" value={uForm.diag} onChange={e=>setUForm({...uForm, diag:e.target.value})} className={`w-full p-3 text-sm border rounded-xl outline-none border-blue-400 ${isDarkMode?'bg-gray-900':'bg-blue-50'}`} required/>
+            <textarea placeholder="5. Điều trị..." value={uForm.treat} onChange={e=>setUForm({...uForm, treat:e.target.value})} className={`w-full p-3 text-sm border rounded-xl outline-none h-24 ${isDarkMode?'bg-gray-900 border-gray-700':'bg-white'}`}/>
+            <button onClick={submitOSCE} disabled={loading} className="w-full bg-green-600 text-white font-bold p-3 rounded-xl flex justify-center items-center disabled:opacity-50">{loading ? <RotateCcw className="animate-spin" size={18}/> : 'Nộp Bài Thi'}</button>
+          </div>
+        </div>
+      )}
+      {step === 'report' && report && (
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="p-8 border-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded-3xl mb-6"><h1 className="text-7xl font-black text-yellow-600 my-4">{report.score}/10</h1></div>
+          <div className="text-left bg-slate-50 dark:bg-gray-900 p-6 rounded-2xl border dark:border-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{report.text}</div>
+          <button onClick={()=>setStep('list')} className="mt-6 bg-blue-600 text-white font-bold px-8 py-3 rounded-xl">Hoàn tất</button>
+        </div>
+      )}
+    </div>
+  );
+});
+
+const HabitsModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  const { habits, events } = data;
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [isRunning, setIsRunning] = useState(false);
+  const [mode, setMode] = useState('work');
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (isRunning) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current); setIsRunning(false);
+            if (mode === 'work') { showToast("Hoàn thành Pomodoro! Nghỉ ngơi nào."); setMode('break'); return 5 * 60; } 
+            else { showToast("Hết giờ nghỉ! Tập trung."); setMode('work'); return 25 * 60; }
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timerRef.current); 
+  }, [isRunning, mode, showToast]);
+
+  const toggleTimer = useCallback(() => setIsRunning(r => !r), []);
+  const resetTimer = useCallback(() => { setIsRunning(false); setTimeLeft(mode === 'work' ? 25 * 60 : 5 * 60); }, [mode]);
+  const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+
+  const [hName, setHName] = useState('');
+  const today = getTodayStr();
+
+  const addHabit = async (e) => {
+    e.preventDefault(); if (!hName.trim()) return;
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'daily_habits'), { name: hName, history: [], streak: 0 });
+    setHName(''); showToast("Đã thêm thói quen.");
+  };
+
+  const checkin = useCallback(async (h) => {
+    const hist = h.history || []; if (hist.includes(today)) return;
+    let newStreak = h.streak || 0;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    if (hist.includes(yesterday) || hist.length === 0) newStreak += 1; else newStreak = 1;
+    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'daily_habits', h.id), { history: [...hist, today], streak: newStreak });
+    showToast("Check-in thành công! 🔥");
+  }, [user, today, showToast]);
+
+  const [eTitle, setETitle] = useState(''); const [eDate, setEDate] = useState(today); const [eType, setEType] = useState('exam');
+  const addEvent = async (e) => {
+    e.preventDefault(); if(!eTitle.trim()) return;
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'calendar_events'), { title: eTitle, date: eDate, type: eType });
+    setETitle(''); showToast("Đã lưu sự kiện.");
+  };
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-6 animate-fadeIn">
+      <div className="space-y-6">
+        <div className={`p-8 rounded-3xl shadow-sm text-center border ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}>
+           <span className="text-[10px] font-bold tracking-widest uppercase bg-rose-100 text-rose-600 px-3 py-1 rounded-full">{mode === 'work' ? 'Tập trung' : 'Nghỉ ngơi'}</span>
+           <div className="text-6xl font-black text-rose-500 my-6 tracking-widest font-mono">{formatTime(timeLeft)}</div>
+           <div className="flex justify-center gap-3">
+             <button onClick={toggleTimer} className={`px-8 py-3 rounded-xl font-bold text-white transition-all ${isRunning?'bg-yellow-500':'bg-rose-600'}`}>{isRunning ? 'Tạm dừng' : 'Bắt đầu'}</button>
+             <button onClick={resetTimer} className="px-6 py-3 rounded-xl font-bold bg-slate-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Cài lại</button>
+           </div>
+        </div>
+
+        <div className={`p-6 rounded-2xl shadow-sm border ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}>
+          <h3 className="font-bold flex items-center gap-2 mb-4"><Clock className="text-blue-500"/> Tracker Thói Quen</h3>
+          <form onSubmit={addHabit} className="flex gap-2 mb-4"><input type="text" placeholder="Tạo thói quen..." value={hName} onChange={e=>setHName(e.target.value)} className={`flex-1 p-2.5 text-sm rounded-xl outline-none border ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/><button type="submit" className="bg-blue-600 text-white px-4 rounded-xl"><Plus size={18}/></button></form>
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {habits.map(h => {
+              const isChecked = h.history?.includes(today);
+              return (
+                <div key={h.id} className={`p-3 rounded-xl border flex justify-between items-center transition-all ${isChecked?'bg-green-50 border-green-200 dark:bg-green-900/10':'bg-slate-50 dark:bg-gray-900 dark:border-gray-800'}`}>
+                  <div><p className={`text-sm font-bold ${isChecked?'line-through text-gray-400':''}`}>{h.name}</p><p className="text-[10px] font-bold text-amber-500 mt-1">🔥 Chuỗi: {h.streak||0} ngày</p></div>
+                  <div className="flex gap-1">
+                    <button onClick={()=>checkin(h)} disabled={isChecked} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold ${isChecked?'bg-green-500 text-white':'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>{isChecked?'Xong':'Check'}</button>
+                    <button onClick={()=>deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'daily_habits', h.id))} className="text-red-500 p-2"><Trash2 size={14}/></button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className={`p-6 rounded-2xl shadow-sm border ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}>
+        <h3 className="font-bold flex items-center gap-2 mb-6"><Calendar className="text-indigo-500"/> Lịch Y Khoa</h3>
+        <form onSubmit={addEvent} className="grid grid-cols-2 gap-2 mb-6">
+          <input type="text" placeholder="Sự kiện..." value={eTitle} onChange={e=>setETitle(e.target.value)} className={`col-span-2 p-2.5 text-sm rounded-xl outline-none border ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+          <input type="date" value={eDate} onChange={e=>setEDate(e.target.value)} className={`p-2.5 text-sm rounded-xl outline-none border ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`} required/>
+          <div className="flex gap-2">
+            <select value={eType} onChange={e=>setEType(e.target.value)} className={`flex-1 p-2.5 text-sm rounded-xl outline-none border ${isDarkMode?'bg-gray-900 border-gray-700':'bg-slate-50'}`}><option value="exam">Lịch thi</option><option value="duty">Trực</option><option value="deadline">Bài tập</option></select>
+            <button type="submit" className="bg-indigo-600 text-white px-4 rounded-xl"><Plus size={18}/></button>
+          </div>
+        </form>
+        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+          {events.sort((a,b)=>new Date(a.date)-new Date(b.date)).map(e => (
+            <div key={e.id} className="p-4 border rounded-xl bg-slate-50 dark:bg-gray-900 dark:border-gray-800 flex justify-between items-center">
+              <div><p className="font-bold text-sm">{e.title}</p><div className="flex gap-2 mt-1.5 items-center"><span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${e.type==='exam'?'bg-red-100 text-red-700':e.type==='duty'?'bg-orange-100 text-orange-700':'bg-blue-100 text-blue-700'}`}>{e.type}</span><span className="text-xs font-bold text-gray-500">{e.date}</span></div></div>
+              <button onClick={()=>deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'calendar_events', e.id))} className="text-red-500 p-2"><Trash2 size={16}/></button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const GamificationModule = React.memo(({ data, isDarkMode }) => {
+  const comp = data.tasks.filter(t=>t.completed).length;
+  const lv = Math.floor(comp/5)+1;
+  return (
+    <div className="space-y-6">
+      <div className={`p-6 text-center rounded-2xl shadow-sm border ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}><h1 className="text-5xl font-black text-blue-600">Level {lv}</h1><p className="mt-2 font-bold text-gray-500">Hoàn thành thêm {5 - (comp%5)} nhiệm vụ để thăng cấp</p></div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+         {[{n:"Sơ cấp", r:1, i:"🌱"}, {n:"Chăm chỉ", r:5, i:"🔥"}, {n:"Chuyên nghiệp", r:10, i:"⭐"}, {n:"Giáo sư", r:20, i:"🏆"}].map((b,i)=> (
+           <div key={i} className={`p-6 border rounded-2xl text-center ${comp>=b.r?'bg-yellow-50 border-yellow-300 dark:bg-yellow-900/20':'grayscale opacity-50 bg-slate-50 dark:bg-gray-800 dark:border-gray-700'}`}><div className="text-4xl mb-2">{b.i}</div><p className="font-bold text-sm">{b.n}</p></div>
+         ))}
+      </div>
+    </div>
+  )
+});
+
+const NotificationsModule = React.memo(({ user, data, isDarkMode }) => {
+  const showToast = React.useContext(ToastContext);
+  return (
+    <div className={`p-6 rounded-2xl shadow-sm border ${isDarkMode?'bg-gray-800 border-gray-700':'bg-white'}`}>
+       <h2 className="font-black text-blue-600 mb-6 flex items-center gap-2"><Bell/> Thông báo hệ thống</h2>
+       <div className="space-y-2">
+         {data.notifications.map(n => (
+           <div key={n.id} className="p-4 border rounded-xl flex justify-between bg-slate-50 dark:bg-gray-900 dark:border-gray-800">
+             <div><p className="font-bold text-sm">{n.title}</p><p className="text-xs mt-1 text-gray-500">{n.message}</p></div>
+             <button onClick={()=>{deleteDoc(doc(db,'artifacts',appId,'users',user.uid,'notifications',n.id)); showToast("Đã xóa");}} className="text-red-500 p-2"><Trash2 size={16}/></button>
+           </div>
+         ))}
+       </div>
+    </div>
+  )
+});
